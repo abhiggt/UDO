@@ -6,8 +6,6 @@ UDO is a finger party game for one phone and a table full of friends. Everyone p
 
 It's the childhood game *Chidiya Udd*, rebuilt for the phone in the middle of the table, with strikes, photo finishes, optional reverse rounds and dares for whoever gets caught.
 
-**Play it:** `https://YOUR-PROJECT.vercel.app` (replace with your Vercel link once deployed)
-
 Version 0.2 · see [CHANGELOG.md](CHANGELOG.md)
 
 ---
@@ -60,27 +58,6 @@ It's one HTML file with no build step.
   ```
 
   Then open the address it prints. To play on your phone, open your computer's local IP address (for example `http://192.168.1.20:8000`) on a phone on the same Wi-Fi.
-
-## Deploy to Vercel
-
-1. Push this folder to a GitHub repository.
-2. On [vercel.com](https://vercel.com), choose **Add New → Project** and import the repository.
-3. Leave the settings as they are: **Framework Preset: Other**, no build command, output directory is the project root.
-4. Click **Deploy**. Every push to `main` redeploys automatically.
-
-Prefer the command line? `npx vercel` from this folder does the same.
-
-`vercel.json` makes sure phones always fetch the newest `index.html` and service worker, and serves the manifest with the right type.
-
-## Install and offline play
-
-Open the deployed link once on the phone, then:
-
-- **iPhone:** Share → **Add to Home Screen**
-- **Android:** tap **📲 Install** on the intro (or the browser menu → Install app)
-
-After that, UDO opens fullscreen from the home screen and works with no internet.
-
 ## Make it yours
 
 Everything lives in `index.html`.
@@ -108,7 +85,6 @@ Everything lives in `index.html`.
 ├── icon-512.png
 ├── icon-maskable-512.png
 ├── apple-touch-icon.png
-├── vercel.json              cache headers for Vercel
 ├── CHANGELOG.md             version history
 └── README.md
 ```
@@ -125,18 +101,3 @@ Everything lives in `index.html`.
 - Inspired by the childhood game *Chidiya Udd* and by [Chooser](https://chooser.kuehle.me/) by kuehle.
 - Typefaces: [Bricolage Grotesque](https://fonts.google.com/specimen/Bricolage+Grotesque) and [Instrument Serif](https://fonts.google.com/specimen/Instrument+Serif), both under the SIL Open Font License.
 - Emoji are drawn by each device's own emoji font.
-
-## License
-
-Not chosen yet. Add a `LICENSE` file (MIT is a common choice for small open-source games) before inviting contributions.
-
----
-
-<details>
-<summary>🥚 Easter egg spoilers</summary>
-
-1. **When pigs fly.** On the intro, tap the O in the logo 7 times quickly.
-2. **The chicken.** About 1 round in 25 (from round 3), the reel lands on 🐔. Does a chicken fly? Nobody knows. Free round: no one can be caught after it lands.
-3. **The dodo.** Get caught three times in a row and you're officially a dodo. A 🦤 waddles across the screen, and you get the secret *Certified dodo* award at the end.
-
-</details>
