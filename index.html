@@ -1,0 +1,1407 @@
+<!doctype html>
+<!-- UDO 0.2 · Lift for what flies. Freeze for what doesn't. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="UDO">
+<meta name="theme-color" content="#000000">
+<title>UDO</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --marigold: #ffb000;
+    --green: #5ee34a;
+    --rev: #ff40d9;
+    --slot: 56px;
+    --cy: 50vh;
+    --font: "Bricolage Grotesque", system-ui, -apple-system, sans-serif;
+    --serif: "Instrument Serif", Georgia, "Times New Roman", serif;   /* the game's cheeky voice */
+    --emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; width: 100%; height: 100%; overflow: hidden; color: #fff; background: #000;
+    overscroll-behavior: none; touch-action: none;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+    font-family: var(--font);
+  }
+  /* sized in pixels from JS so no browser can stretch it */
+  canvas#cv { position: fixed; top: 0; left: 0; display: block; }
+  button { font-family: var(--font); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+  /* ---------- In-game hints: one copy above the circle (upside-down), one below ---------- */
+  .hint {
+    position: fixed; left: 50%; width: 88vw; text-align: center; pointer-events: none; z-index: 2;
+    font-size: clamp(18px, 5.4vmin, 24px); font-weight: 700; line-height: 1.2; color: #fff;
+  }
+  #hintTop { top: calc(var(--cy) - var(--slot) - 30px); transform: translate(-50%, -100%) rotate(180deg); }
+  #hintBot { top: calc(var(--cy) + var(--slot) + 30px); transform: translateX(-50%); }
+  .hint .g { color: var(--green); }
+  .hint .r { color: var(--rev); }
+  .hint .y { color: #ffd23f; }
+  /* the game's own voice (results, wisecracks) uses the serif */
+  .hint.voice { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: clamp(24px, 7.2vmin, 32px); line-height: 1.1; }
+
+  /* ---------- Toast (easter eggs) ---------- */
+  #toast {
+    position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); z-index: 9;
+    transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+    padding: 10px 20px; border-radius: 999px; background: #fff; color: #000; white-space: nowrap;
+    font-family: var(--serif); font-style: italic; font-size: 22px;
+    transition: opacity .2s, transform .3s cubic-bezier(.2,1.5,.4,1);
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .flyer {
+    position: fixed; z-index: 8; pointer-events: none; font-family: var(--emoji); font-size: 64px; line-height: 1;
+    left: -80px; top: 40%; animation: flyAcross 3.2s linear forwards;
+  }
+  .flyer.walker { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); font-size: 52px; animation: waddle 5.4s linear forwards; }
+  @keyframes waddle {
+    0% { transform: translateX(0) rotate(-5deg); } 10% { transform: translateX(10vw) rotate(5deg); }
+    20% { transform: translateX(20vw) rotate(-5deg); } 30% { transform: translateX(30vw) rotate(5deg); }
+    40% { transform: translateX(40vw) rotate(-5deg); } 50% { transform: translateX(50vw) rotate(5deg); }
+    60% { transform: translateX(60vw) rotate(-5deg); } 70% { transform: translateX(70vw) rotate(5deg); }
+    80% { transform: translateX(80vw) rotate(-5deg); } 90% { transform: translateX(90vw) rotate(5deg); }
+    100% { transform: translateX(calc(100vw + 140px)) rotate(0); }
+  }
+  @keyframes flyAcross {
+    0%   { transform: translate(0, 0) rotate(-8deg); }
+    25%  { transform: translate(30vw, -6vh) rotate(6deg); }
+    50%  { transform: translate(60vw, 2vh) rotate(-6deg); }
+    75%  { transform: translate(90vw, -8vh) rotate(6deg); }
+    100% { transform: translate(calc(100vw + 160px), -4vh) rotate(-4deg); }
+  }
+
+  #menuBtn {
+    position: fixed; z-index: 3; display: none;
+    top: calc(env(safe-area-inset-top, 0px) + 12px); left: calc(env(safe-area-inset-left, 0px) + 12px);
+    padding: 9px 16px; border: 1px solid rgba(255,255,255,.3); border-radius: 999px;
+    background: #000; color: #fff; font-size: 15px; font-weight: 700;
+  }
+  #menuBtn.show { display: block; }
+
+  /* ---------- Full screens ---------- */
+  .screen {
+    position: fixed; inset: 0; z-index: 5; background: #000;
+    display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; touch-action: pan-y;
+    padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+             max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  }
+  .screen.hide { display: none; }
+  .sheet { z-index: 6; }
+  .blob {
+    position: absolute; width: var(--s); height: var(--s); border-radius: 50%; background: var(--c);
+    box-shadow: 0 0 0 calc(var(--s) * .09) #000, 0 0 0 calc(var(--s) * .17) var(--c);
+    opacity: .4;                                   /* quiet decoration: the logo is the star */
+    animation: breathe 2.6s ease-in-out infinite; animation-delay: var(--d, 0s);
+  }
+  @keyframes breathe { 50% { transform: scale(1.05); } }
+  .inner { position: relative; width: 100%; max-width: 420px; margin: auto; }
+
+  .logo {
+    margin: 0; display: flex; align-items: center; justify-content: center;
+    font-size: clamp(100px, 38vmin, 176px); font-weight: 800; line-height: .9; letter-spacing: -.05em;
+  }
+  .logo .o {
+    display: inline-grid; place-items: center; overflow: hidden;
+    width: .8em; height: .8em; margin-left: .05em; border-radius: 50%;
+    border: .1em solid var(--marigold); transition: border-color .3s;
+  }
+  .logo .o.rev { border-color: var(--rev); }
+  .logo .o { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .logo .oe { font-family: var(--emoji); font-size: .4em; line-height: 1; letter-spacing: 0; }
+  .logo .oe.roll { animation: roll .42s cubic-bezier(.2,1.5,.4,1); }
+  @keyframes roll { from { transform: translateY(120%); } to { transform: translateY(0); } }
+
+  #intro .inner { text-align: center; }
+  .hook {
+    margin: clamp(12px, 2.6vh, 20px) 0 clamp(18px, 4vh, 26px);
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: clamp(26px, 7.6vmin, 34px); line-height: 1.05;
+  }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .tile { padding: 12px 4px 10px; border-radius: 18px; background: rgba(255,255,255,.07); }
+  .tile .e { display: block; font-family: var(--emoji); font-size: clamp(26px, 8vmin, 34px); line-height: 1.1; }
+  .tile b { display: block; margin-top: 6px; font-size: clamp(13px, 3.8vmin, 15px); font-weight: 500; color: rgba(255,255,255,.65); }
+  .tile strong { display: block; font-size: clamp(16px, 4.8vmin, 19px); font-weight: 800; }
+  .play {
+    display: block; width: 100%; margin-top: clamp(18px, 4vh, 26px); padding: clamp(16px, 2.6vh, 20px);
+    border: 0; border-radius: 999px; background: var(--marigold); color: #000;
+    font-size: clamp(20px, 6vmin, 24px); font-weight: 800;
+  }
+  #playBtn { animation: nudge 2.2s ease-in-out infinite; }
+  @keyframes nudge { 0%, 70%, 100% { transform: scale(1); } 80% { transform: scale(1.04); } 90% { transform: scale(.99); } }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+  .pill {
+    padding: 9px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.22);
+    background: none; color: rgba(255,255,255,.65); font-size: 14px; font-weight: 700;
+  }
+  .pill[aria-pressed="true"], .pill.on { background: rgba(255,255,255,.13); color: #fff; border-color: rgba(255,255,255,.4); }
+  .pill[hidden] { display: none; }
+
+  /* on/off switches for UDO Reverse and sound */
+  .switches { display: grid; gap: 6px; margin-top: 14px; }
+  .switch {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+    padding: 9px 12px 9px 16px; border: 0; border-radius: 16px; background: rgba(255,255,255,.07);
+    color: rgba(255,255,255,.7); font-size: clamp(15px, 4.2vmin, 16px); font-weight: 700; text-align: left; white-space: nowrap;
+  }
+  @media (min-width: 560px) { .switches { grid-template-columns: 1fr 1fr; } }
+  .switch[aria-checked="true"] { color: #fff; }
+  .track { position: relative; flex: 0 0 auto; width: 44px; height: 26px; border-radius: 999px; background: rgba(255,255,255,.18); transition: background .2s; }
+  .thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .2s cubic-bezier(.3,1.4,.5,1); }
+  .switch[aria-checked="true"] .thumb { transform: translateX(18px); }
+  .switch[aria-checked="true"] .track { background: var(--green); }
+  #revBtn[aria-checked="true"] .track { background: var(--rev); }
+
+  .sheet h2, .end-title { margin: 0 0 14px; font-size: clamp(32px, 10vmin, 44px); font-weight: 800; letter-spacing: -.02em; line-height: 1; }
+  .sub { margin: 0 0 16px; font-family: var(--serif); font-style: italic; font-size: clamp(19px, 5.4vmin, 22px); line-height: 1.25; color: rgba(255,255,255,.75); }
+  .rule { display: flex; gap: 14px; padding: 12px 0; border-top: 1px solid rgba(255,255,255,.12); }
+  .rule .e { flex: 0 0 auto; width: 40px; font-family: var(--emoji); font-size: 26px; line-height: 1.2; text-align: center; }
+  .rule p { margin: 0; font-size: clamp(15px, 4.3vmin, 17px); line-height: 1.35; color: rgba(255,255,255,.82); }
+  .rule b { color: #fff; }
+  .rule .r { color: var(--rev); font-weight: 800; }
+  .white-btn {
+    display: block; width: 100%; margin-top: 18px; padding: 16px; border: 0; border-radius: 999px;
+    background: #fff; color: #000; font-size: 19px; font-weight: 800;
+  }
+  .ghost-btn {
+    display: block; width: 100%; margin-top: 10px; padding: 15px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.3); background: none; color: #fff; font-size: 18px; font-weight: 700;
+  }
+  .ghost-btn:disabled { opacity: .5; }
+
+  /* ---------- Your dares ---------- */
+  .add { display: flex; gap: 8px; }
+  .add input {
+    flex: 1; min-width: 0; padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,.25);
+    background: rgba(255,255,255,.06); color: #fff; font: 500 17px var(--font);
+    -webkit-user-select: text; user-select: text; touch-action: manipulation;
+  }
+  .add input::placeholder { color: rgba(255,255,255,.4); }
+  .add button { padding: 0 18px; border: 0; border-radius: 16px; background: var(--marigold); color: #000; font-size: 17px; font-weight: 800; }
+  #myList { list-style: none; margin: 14px 0 0; padding: 0; }
+  #myList li { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid rgba(255,255,255,.12); font-size: 16px; line-height: 1.3; }
+  #myList li span { flex: 1; }
+  #myList li button { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); background: none; color: #fff; font-size: 16px; }
+  #myEmpty { margin: 16px 0 0; color: rgba(255,255,255,.5); font-size: 15px; }
+  #onlyOurs { margin-top: 14px; }
+
+  /* ---------- End of game ---------- */
+  .end-title { margin-bottom: 6px; }
+  .award { display: flex; align-items: center; gap: 14px; padding: 12px 14px; margin-bottom: 8px; border-radius: 18px; background: rgba(255,255,255,.07); }
+  .award .e { flex: 0 0 auto; font-family: var(--emoji); font-size: 30px; line-height: 1; }
+  .award b { display: block; font-size: 18px; font-weight: 800; }
+  .award p { margin: 3px 0 0; font-size: 15px; line-height: 1.35; color: rgba(255,255,255,.75); }
+
+  /* ---------- Chips ---------- */
+  .chip { display: inline-block; padding: 0 10px; border-radius: 999px; background: var(--c); color: #000; font-weight: 800; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips span { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px 4px 6px; border-radius: 999px;
+                background: rgba(255,255,255,.09); font-size: clamp(13px, 3.7vmin, 14px); color: rgba(255,255,255,.85); }
+  .chips span.me { box-shadow: inset 0 0 0 2px var(--c); color: #fff; }
+  .chips i { width: 11px; height: 11px; border-radius: 50%; background: var(--c); font-style: normal; }
+  .chips b { font-weight: 800; color: #fff; }
+  .lbl { margin: 0 0 6px; font-size: clamp(12px, 3.5vmin, 13px); color: rgba(255,255,255,.55); }
+
+  /* ---------- Dare card, shown on the caught player's colour flood ---------- */
+  #dare {
+    position: fixed; inset: 0; z-index: 4; display: none; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  #dare.show { display: flex; }
+  .card {
+    --rot: 0deg; position: relative; flex-shrink: 0;
+    width: min(360px, 90vmin); max-height: 92vh; overflow-y: auto;   /* JS sets both to fit the card's orientation */
+    padding: clamp(16px, 5vmin, 22px); border-radius: clamp(22px, 7vmin, 30px);
+    background: #000; color: #fff; pointer-events: auto; touch-action: pan-y;
+    box-shadow: 0 12px 40px rgba(0,0,0,.35);
+    transform: rotate(var(--rot)) scale(.7); opacity: 0;
+    transition: transform .35s cubic-bezier(.2,1.5,.4,1), opacity .15s;
+  }
+  .card.in { transform: rotate(var(--rot)) scale(1); opacity: 1; }
+  .col-a { position: relative; }
+  .card .num { font-size: clamp(46px, 16vmin, 76px); font-weight: 800; line-height: .9; letter-spacing: -.03em; padding-right: 90px; }
+  .card .why { margin-top: 6px; font-family: var(--serif); font-style: italic; font-size: clamp(18px, 5.2vmin, 21px); line-height: 1.2; color: rgba(255,255,255,.78); }
+  .card .egg { margin-top: 8px; font-family: var(--serif); font-style: italic; font-size: clamp(18px, 5.2vmin, 21px); line-height: 1.2; color: #ffd23f; }
+  .card .egg:empty { display: none; }
+  .card .task { margin: clamp(12px, 3.8vmin, 18px) 0; font-size: clamp(21px, 6.4vmin, 27px); font-weight: 800; line-height: 1.15; letter-spacing: -.01em; }
+  .card .chips { margin-bottom: clamp(12px, 3.6vmin, 16px); }
+  .stamp {
+    position: absolute; top: 4px; right: 0;
+    padding: 5px 12px; border: 3px solid var(--green); border-radius: 12px;
+    color: var(--green); font-size: 18px; font-weight: 800;
+    transform: rotate(-8deg) scale(0); transition: transform .3s cubic-bezier(.2,1.6,.4,1);
+  }
+  .card.done .stamp { transform: rotate(-8deg) scale(1); }
+  .card.done .task-actions { display: none; }
+  .task-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: -4px 0 clamp(14px, 4vmin, 18px); }
+  .task-actions button {
+    padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.22);
+    background: rgba(255,255,255,.06); color: rgba(255,255,255,.85); font-size: clamp(13px, 3.8vmin, 14px); font-weight: 700;
+  }
+  .task-actions button[hidden] { display: none; }
+  .end-link {
+    display: block; margin: 12px auto 0; padding: 6px 12px; border: 0; background: none;
+    color: rgba(255,255,255,.5); font-size: 14px; font-weight: 500; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .version { margin: 14px 0 0; text-align: center; font-size: 13px; color: rgba(255,255,255,.4); }
+  .done-btn {
+    display: block; width: 100%; padding: clamp(13px, 4vmin, 16px); border: 0; border-radius: 16px;
+    background: #fff; color: #000; font-size: clamp(18px, 5.4vmin, 20px); font-weight: 800;
+  }
+  .card.done .done-btn { background: var(--green); }
+  .card.wide { display: grid; grid-template-columns: 1.1fr 1fr; column-gap: 22px; align-items: start; }
+  .card.wide .task { margin-bottom: 0; font-size: clamp(18px, 5.6vmin, 24px); }
+  .card.wide .num { font-size: clamp(40px, 13vmin, 66px); }
+  .card.wide .done-btn { padding: clamp(10px, 3.2vmin, 15px); }
+  .card.wide .task-actions { margin-top: 12px; }
+  .card.wide .end-link { margin-top: 6px; }
+  .card.tight .dares { display: none; }     /* very little room: the running tally lives on the end screen */
+
+  /* short screens (phones in landscape): keep Play above the fold */
+  @media (max-height: 520px) {
+    .inner { max-width: 560px; }
+    .logo { font-size: clamp(64px, 24vh, 110px); }
+    .hook { margin: 8px 0 12px; font-size: 24px; }
+    .hook br { display: none; }
+    .tile { padding: 7px 4px 6px; }
+    .tile .e { font-size: 22px; }
+    .play { margin-top: 12px; padding: 12px; font-size: 19px; }
+    .switches, .pills { margin-top: 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: opacity .15s; }
+    .blob, #playBtn, .logo .oe.roll { animation: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div class="hint" id="hintTop"></div>
+<div class="hint" id="hintBot"></div>
+<button id="menuBtn"></button>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- ============ Intro ============ -->
+<section class="screen" id="intro">
+  <div class="blob" style="--s:15vmin;--c:#ff2e88;top:-4vmin;left:-5vmin"></div>
+  <div class="blob" style="--s:11vmin;--c:#00d1c1;top:10vmin;right:-4vmin;--d:.6s"></div>
+  <div class="blob" style="--s:13vmin;--c:#c39bff;bottom:-6vmin;left:6vmin;--d:1.1s"></div>
+  <div class="blob" style="--s:16vmin;--c:#4d8dff;bottom:6vmin;right:-6vmin;--d:1.7s"></div>
+  <div class="inner">
+    <h1 class="logo" aria-label="UDO">UD<span class="o" id="logoO"><span class="oe" id="logoEmoji">🐦</span></span></h1>
+    <p class="hook">Lift for what flies. <br>Freeze for what doesn't.</p>
+    <div class="tiles">
+      <div class="tile"><span class="e">🟢</span><b>Not green?</b><strong>Wait</strong></div>
+      <div class="tile"><span class="e">🐦</span><b>Flies?</b><strong>Lift</strong></div>
+      <div class="tile"><span class="e">🐘</span><b>Doesn't?</b><strong>Freeze</strong></div>
+      <div class="tile"><span class="e">😈</span><b>Caught?</b><strong>Dare</strong></div>
+    </div>
+    <button class="play" id="playBtn">Play</button>
+    <div class="switches">
+      <button class="switch" id="revBtn" role="switch" aria-checked="false"><span>🔄 UDO Reverse</span><span class="track"><span class="thumb"></span></span></button>
+      <button class="switch" id="soundBtn" role="switch" aria-checked="true"><span id="soundLbl">🔊 Sound</span><span class="track"><span class="thumb"></span></span></button>
+    </div>
+    <div class="pills">
+      <button class="pill" id="howBtn">How to play</button>
+      <button class="pill" id="myBtn">✍️ Your dares</button>
+      <button class="pill" id="installBtn" hidden>📲 Install</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ How to play ============ -->
+<section class="screen sheet hide" id="how">
+  <div class="inner">
+    <h2>How to play</h2>
+    <div class="rule"><span class="e">☝️</span><p><b>Fingers down.</b> One each, outside the circle, phone flat in the middle. Hold still and the game begins.</p></div>
+    <div class="rule"><span class="e">🟢</span><p><b>Only lift on green.</b> Lift while it's rolling, or a split second after it turns green, and you're caught.</p></div>
+    <div class="rule"><span class="e">🐦</span><p><b>It flies?</b> Lift before time's up, or you're caught. If everyone lifts, the slowest finger takes a strike. Two strikes and you're caught.</p></div>
+    <div class="rule"><span class="e">📸</span><p><b>Photo finish.</b> If the slowest fingers are within 0.05 seconds of each other, they all take a strike. If everyone's that close, nobody does.</p></div>
+    <div class="rule"><span class="e">🐘</span><p><b>It doesn't fly?</b> Freeze. Lift and you're caught, along with anyone who lifts in the same instant.</p></div>
+    <div class="rule"><span class="e">🔄</span><p><b>UDO Reverse</b> (switch it on in the intro). Now and then a round with a <span class="r">pink ring</span> flips the rule: lift for what doesn't fly, freeze for what does.</p></div>
+    <div class="rule"><span class="e">😈</span><p><b>Caught?</b> Do the dare. Don't like it? Roll another, or let the others give you one. Tap Dare done, then Continue.</p></div>
+    <div class="rule"><span class="e">🥚</span><p><b>Three easter eggs</b> are hidden in here. All bird-brained. None of them help you win.</p></div>
+    <div class="rule"><span class="e">⚡</span><p><b>Every 5 rounds</b> it speeds up.</p></div>
+    <div class="rule"><span class="e">🏆</span><p><b>End game</b> for awards you can share with the group.</p></div>
+    <button class="white-btn" id="howClose">Got it</button>
+    <p class="version" id="versionTag"></p>
+  </div>
+</section>
+
+<!-- ============ Your dares ============ -->
+<section class="screen sheet hide" id="mine">
+  <div class="inner">
+    <h2>Your dares</h2>
+    <p class="sub">Add dares only your group would get. They're shuffled in with ours and saved on this phone.</p>
+    <form class="add" id="myForm" autocomplete="off">
+      <input id="myInput" maxlength="140" placeholder="Type a dare" enterkeyhint="done" aria-label="New dare">
+      <button type="submit">Add</button>
+    </form>
+    <ul id="myList"></ul>
+    <p id="myEmpty">No dares yet. Try one about the person who's always late.</p>
+    <button class="pill" id="onlyOurs" aria-pressed="false">Only use our dares</button>
+    <button class="white-btn" id="myClose">Done</button>
+  </div>
+</section>
+
+<!-- ============ End of game ============ -->
+<section class="screen hide" id="end">
+  <div class="inner">
+    <h2 class="end-title">Everyone's grounded</h2>
+    <p class="sub" id="endSub"></p>
+    <div id="awards"></div>
+    <p class="lbl" style="margin-top:14px">Dares done</p>
+    <div class="chips" id="endScore"></div>
+    <button class="play" id="againBtn">Play again</button>
+    <button class="white-btn" id="shareBtn">Share results</button>
+    <button class="ghost-btn" id="freshBtn">Add new players</button>
+  </div>
+</section>
+
+<!-- ============ Dare card ============ -->
+<div id="dare">
+  <div class="card" id="card">
+    <div class="col-a">
+      <div class="stamp">Done!</div>
+      <div class="num" id="cNum"></div>
+      <div class="why" id="cWhy"></div>
+      <div class="egg" id="cEgg"></div>
+      <div class="task" id="cTask"></div>
+      <div class="task-actions">
+        <button id="rerollBtn">🎲 Another dare</button>
+        <button id="ownBtn">🙋 Let us give the dare</button>
+      </div>
+    </div>
+    <div class="col-b">
+      <p class="lbl">This round</p>
+      <div class="chips" id="cTimes"></div>
+      <p class="lbl dares">Dares done</p>
+      <div class="chips dares" id="cScore"></div>
+      <button class="done-btn" id="doneBtn">Dare done</button>
+      <button class="end-link" id="endBtn">End game</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ================= Tunables =================
+  const CFG = {
+    armMs: 1800,          // everyone holds still this long to start
+    windowStart: 1400,    // time to lift after the ring turns green (ms), round 1
+    windowMin: 800,       // shortest it gets
+    windowStep: 40,       // shrinks each round
+    liftChance: 0.55,     // how often the right move is to lift
+    fakeStopChance: 0.35, // reel pauses on the bait, then clicks once more
+    fakeStopMs: 600,
+    speedEvery: 5,        // reel gets 10% faster every this many rounds (up to 50%)
+    reverseFrom: 3,       // UDO Reverse rounds can show up from this round on...
+    reverseChance: 0.22,  // ...this often, never twice in a row
+    chickenFrom: 2,       // easter egg: from this round on...
+    chickenChance: 0.04,  // ...about 1 round in 25 lands on a chicken
+    strikesForDare: 2,
+    tieMs: 50,            // photo finish: slowest lifts this close together all take a strike
+    earlyMs: 100,         // nobody reacts this fast: a lift inside this is a guess, and gets caught
+    graceMs: 150,         // after a wrong lift, anyone else who wrongly lifts this soon is caught with them
+    volume: 0.35,
+  };
+
+  const FLY   = ["🐦","🦅","🦉","🦋","🕊️","🦜","🐝","🦇","✈️","🚁","🚀","🎈"];
+  const NOFLY = ["🐘","🐄","🐕","🐈","🐟","🦁","🐢","🌳","🏠","🚗","🚂","🍌"];
+  const ALL = [...FLY, ...NOFLY];
+
+  const DARES = [
+    "Do your loudest crow call. Kaa kaa!",
+    "Flap your arms and shout “UDO!” like you're about to take off.",
+    "Sing any Bollywood chorus like a classical singer at a music competition.",
+    "Dance like a baraati for 10 seconds.",
+    "Do the naagin dance for 10 seconds.",
+    "Impersonate someone in this room. They have to guess who.",
+    "Give a 15-second wedding speech for the player across from you.",
+    "Narrate the last minute like a cricket commentator.",
+    "Give a TV-serial reaction. Three dramatic zoom-ins. Dhan dhan dhan.",
+    "Speak like a news anchor until your next dare.",
+    "Sell your phone to the group like a teleshopping host.",
+    "Be a pressure cooker. Three whistles.",
+    "Act like an aunty who just found out your marks.",
+    "Propose to the nearest chair, filmy style.",
+    "Do your best Bollywood villain laugh. Make it echo.",
+    "Try to lick your elbow. Everyone watches.",
+    "Keep a straight face for 15 seconds while everyone tries to make you laugh.",
+    "Explain how a ceiling fan works like a confused professor.",
+    "Order dinner from an imaginary waiter in a fake British accent.",
+    "Bargain with the player across from you like it's the sabzi mandi.",
+    "Buzz around someone's ear like a mosquito for 5 seconds.",
+    "Do a slow-motion replay of how you just got caught.",
+    "Give every player a nickname. They keep it until the game ends.",
+    "Thank everyone like you just won a Filmfare award.",
+    "Say the alphabet backwards from M.",
+    "Walk like a peacock across the room and back.",
+    "Talk only in questions until the next round ends.",
+    "Show everyone your screen time for today.",
+    "Let the group pick an emoji for your WhatsApp status. It stays for an hour.",
+    "Call someone and sing them happy birthday. It doesn't have to be their birthday.",
+  ];
+  const GROUP_DARES = [
+    "Sing a duet of any Bollywood song.",
+    "Stage a 10-second slow-motion fight.",
+    "Staring contest. First to blink does 5 squats.",
+    "Synchronised crow call. Kaa kaa!",
+    "Act out a TV-serial family drama for 15 seconds.",
+    "Pose like a 90s wedding album photo. Hold it for 5 seconds.",
+    "Dance-off. Everyone else picks the winner.",
+    "Do a slow-motion replay of how you all got caught.",
+  ];
+
+  const COLORS = ["#ffb000","#ff2e88","#00d1c1","#5ee34a","#4d8dff","#ff5a36","#c39bff","#ffe14d","#ffffff","#ff8fd0"];
+  const RING_BY_COUNT = [64, 64, 62, 56, 50, 45, 41, 38, 35, 33, 31]; // blob ring radius by player count
+  const AMBER = "#ffb000", GREEN = "#5ee34a", REV = "#ff40d9", TAU = Math.PI * 2;
+  const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+  const FONT = '"Bricolage Grotesque", system-ui, sans-serif';
+  const SERIF = '"Instrument Serif", Georgia, serif';
+
+  // ================= Helpers =================
+  const $ = id => document.getElementById(id);
+  const rnd = a => a[Math.random() * a.length | 0];
+  const now = () => performance.now();
+  const times = n => n === 0 ? "zero times" : n === 1 ? "once" : n === 2 ? "twice" : `${n} times`;
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem("udo." + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem("udo." + k, JSON.stringify(v)); } catch (e) {} },
+  };
+  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  // Draw from a shuffled deck: no repeats until every card is used, and never the same card twice in a row
+  function deck(list) {
+    let pile = [], last = null;
+    return () => {
+      if (!pile.length) {
+        pile = shuffle(list.slice());
+        if (pile.length > 1 && pile[pile.length - 1] === last) [pile[0], pile[pile.length - 1]] = [pile[pile.length - 1], pile[0]];
+      }
+      last = pile.pop();
+      return last;
+    };
+  }
+
+  const VERSION = "0.2";
+  let soundOn = store.get("sound", true), reverseOn = store.get("reverse2", false);   // UDO Reverse is off until you switch it on
+  let seen = store.get("seen", false);              // has this phone played a round before? (first-timers get a few hints)
+  let myDares = store.get("mydares", []), onlyOurs = store.get("onlyours", false);
+  if (!Array.isArray(myDares)) myDares = [];
+  let nextDare, nextGroupDare;
+  function rebuildDecks() {
+    const ours = onlyOurs && myDares.length > 0;
+    nextDare = deck(ours ? myDares : DARES.concat(myDares));
+    nextGroupDare = deck(ours ? myDares : GROUP_DARES);
+  }
+  rebuildDecks();
+
+  // ================= Canvas & responsive sizing =================
+  const cv = $("cv"), ctx = cv.getContext("2d");
+  let W = 0, H = 0, DPR = 1, U = 1, SLOT = 56, STEP = 90;
+  const sprites = new Map();
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = Math.round(window.innerWidth); H = Math.round(window.innerHeight);
+    cv.style.width = W + "px"; cv.style.height = H + "px";      // explicit size: never stretched
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const m = Math.min(W, H);
+    U = Math.max(0.8, Math.min(1.4, m / 390));                 // 1 = a typical 390px-wide phone
+    SLOT = Math.round(Math.max(42, Math.min(84, m * 0.145)));
+    STEP = SLOT * 1.6;
+    document.documentElement.style.setProperty("--slot", SLOT + "px");
+    document.documentElement.style.setProperty("--cy", H / 2 + "px");
+    sprites.clear();
+  }
+  addEventListener("resize", resize);
+  addEventListener("orientationchange", () => setTimeout(resize, 250));
+  if (window.visualViewport) visualViewport.addEventListener("resize", resize);
+  resize();
+
+  // Emoji are pre-drawn with their visible ink measured, so they sit dead centre in the circle
+  function sprite(e) {
+    let s = sprites.get(e);
+    if (s) return s;
+    const size = Math.round(SLOT * 1.1), box = Math.ceil(size * 1.6);
+    const c = document.createElement("canvas");
+    c.width = c.height = Math.ceil(box * DPR);
+    const g = c.getContext("2d"); g.scale(DPR, DPR);
+    g.font = `${size}px ${EMOJI_FONT}`; g.textAlign = "left"; g.textBaseline = "alphabetic"; g.fillStyle = "#fff";
+    const m = g.measureText(e);
+    const L = m.actualBoundingBoxLeft || 0, R = m.actualBoundingBoxRight || m.width;
+    const A = m.actualBoundingBoxAscent || size * 0.8, D = m.actualBoundingBoxDescent || size * 0.2;
+    g.fillText(e, box / 2 - (L + R) / 2 + L, box / 2 - (A + D) / 2 + A);
+    s = { c, box }; sprites.set(e, s);
+    return s;
+  }
+  function drawSprite(e, x, y, scale = 1, alpha = 1) {
+    const s = sprite(e), b = s.box * scale;
+    ctx.globalAlpha = alpha; ctx.drawImage(s.c, x - b / 2, y - b / 2, b, b); ctx.globalAlpha = 1;
+  }
+
+  // ================= State =================
+  // player: {n,color,x,y,down,born,liftAt,rt,strikes, dares,caught,fooled,strikesTotal,rts[]}
+  let players = [];
+  const ptr = new Map();
+  let state = "intro"; // intro | lobby | ready | roll | landed | grace | result | reveal | dare | safe | end
+  let lastChange = 0, round = 0, roundsPlayed = 0, slotFlash = 0, allUpSince = null;
+  let readyStart = null, readyDelay = 0;
+  let reverse = false, lastReverse = false, reverseRounds = 0, chickens = 0;
+  let streakP = null, caughtStreak = 0, dodoNow = null;   // easter egg 3: caught three times running
+  let reel = null, target = null, landAt = 0, windowMs = 0;
+  let victims = [], victimKind = "", victimWhy = "", phaseAt = 0, floodAt = 0;
+  let fastest = null, struck = [], pending = [], resultNote = "";
+  let ownDares = false, lastPicker = null, dareDone = false;
+  let ringR = 64, particles = [];
+
+  const dist = (x, y) => Math.hypot(x - W / 2, y - H / 2);
+  const freeNum = () => { let n = 1; while (players.some(p => p.n === n)) n++; return n; };
+  const targetRing = () => RING_BY_COUNT[Math.min(Math.max(players.length, 1), 10)] * U;
+  const rIn = () => ringR * 0.76;
+  // the touch's own timestamp is more precise than "when the handler ran"; fall back if it looks off
+  const stamp = e => (e.timeStamp > 0 && Math.abs(e.timeStamp - now()) < 1000) ? e.timeStamp : now();
+  // ms relative to the ring turning green (negative = before it)
+  const relTime = ts => Math.round(reel.landed ? ts - landAt : ts - (reel.start + reel.total));
+  const newStats = p => Object.assign(p, { liftAt: null, rt: null, strikes: 0, dares: 0, caught: 0, fooled: 0, strikesTotal: 0, rts: [], dodo: false });
+
+  const hintTop = $("hintTop"), hintBot = $("hintBot");
+  // voice = the game talking (results, wisecracks), set in the serif
+  function setHint(html, voice = false) {
+    const key = html + (voice ? "|v" : "");
+    if (hintBot._t === key) return;
+    hintBot._t = key; hintTop.innerHTML = html; hintBot.innerHTML = html;
+    hintTop.classList.toggle("voice", voice); hintBot.classList.toggle("voice", voice);
+  }
+  const STILL_LINES = ["Nerves of steel.", "Not a single twitch.", "Statues. Respect.", "Rock solid.", "Nobody fell for it."];
+  const nextStillLine = deck(STILL_LINES);           // when everyone freezes correctly
+
+  // ================= Sound & haptics (quiet feedback; the emoji is the cue) =================
+  let actx = null, master = null, wl = null;
+  function unlock() {
+    try {
+      if (!actx) {
+        actx = new (window.AudioContext || window.webkitAudioContext)();
+        master = actx.createGain(); master.connect(actx.destination);
+      }
+      master.gain.value = soundOn ? CFG.volume : 0;
+      if (actx.state === "suspended") actx.resume();
+    } catch (e) {}
+    if ("wakeLock" in navigator && !wl) {
+      navigator.wakeLock.request("screen").then(l => { wl = l; l.addEventListener("release", () => wl = null); }).catch(() => {});
+    }
+  }
+  function tone(f1, f2, d, vol, type = "triangle") {
+    if (!actx || !soundOn) return;
+    const o = actx.createOscillator(), g = actx.createGain(), n = actx.currentTime;
+    o.type = type;
+    o.frequency.setValueAtTime(f1, n); o.frequency.exponentialRampToValueAtTime(f2, n + d);
+    g.gain.setValueAtTime(vol, n); g.gain.exponentialRampToValueAtTime(0.0005, n + d);
+    o.connect(g).connect(master); o.start(n); o.stop(n + d);
+  }
+  const vib = ms => { if (navigator.vibrate) navigator.vibrate(ms); };
+  const sfx = {
+    tick:    () => tone(1500, 1100, 0.03, 0.05, "square"),
+    green:   () => { tone(523, 784, 0.12, 0.1, "sine"); vib(25); },
+    lift:    () => tone(700, 1200, 0.07, 0.05, "sine"),
+    strike:  () => { tone(420, 300, 0.18, 0.08); vib(40); },
+    caught:  () => { tone(330, 80, 0.4, 0.1, "sawtooth"); vib([60, 40, 120]); },
+    safe:    () => tone(660, 990, 0.16, 0.05, "sine"),
+    join:    () => tone(500, 800, 0.06, 0.04, "sine"),
+    done:    () => { tone(660, 660, 0.08, 0.06, "sine"); setTimeout(() => tone(990, 990, 0.14, 0.06, "sine"), 100); },
+    go:      () => { tone(520, 520, 0.08, 0.06, "sine"); setTimeout(() => tone(780, 780, 0.12, 0.06, "sine"), 110); },
+    reverse: () => { tone(900, 450, 0.18, 0.07, "sine"); setTimeout(() => tone(450, 900, 0.18, 0.07, "sine"), 180); vib([30, 60, 30]); },
+    oink:    () => { tone(180, 120, 0.16, 0.12, "sawtooth"); setTimeout(() => tone(200, 130, 0.2, 0.12, "sawtooth"), 190); },
+    cluck:   () => { [0, 120, 240].forEach((d, i) => setTimeout(() => tone(700 - i * 60, 420, 0.07, 0.09, "square"), d)); vib([20, 40, 20, 40, 20]); },
+    dodo:    () => { tone(300, 150, 0.35, 0.1, "triangle"); setTimeout(() => tone(150, 75, 0.45, 0.1, "triangle"), 300); },
+  };
+
+  // ================= Screens & buttons =================
+  const introEl = $("intro"), howEl = $("how"), mineEl = $("mine"), endEl = $("end");
+  let logoTimer = null;
+  function showIntro() {
+    hideScreens(); closeDare();
+    players = []; ptr.clear(); clearRound();          // a fresh start every time the intro shows
+    state = "intro"; introEl.classList.remove("hide"); introEl.scrollTop = 0;
+    pigTaps = 0;
+    const el = $("logoEmoji"), o = $("logoO");
+    logoTimer = setInterval(() => {
+      if (now() < pigUntil) return;                    // let the pig enjoy its moment
+      el.textContent = rnd(ALL); el.classList.remove("roll"); void el.offsetWidth; el.classList.add("roll");
+      o.classList.toggle("rev", reverseOn && Math.random() < 0.18);
+    }, 950);
+  }
+  function hideScreens() { for (const s of [introEl, howEl, mineEl, endEl]) s.classList.add("hide"); clearInterval(logoTimer); }
+  function syncPills() {
+    $("soundBtn").setAttribute("aria-checked", soundOn); $("soundLbl").textContent = soundOn ? "🔊 Sound" : "🔇 Sound";
+    $("revBtn").setAttribute("aria-checked", reverseOn);
+    $("myBtn").textContent = myDares.length ? `✍️ Your dares · ${myDares.length}` : "✍️ Your dares";
+    $("myBtn").classList.toggle("on", myDares.length > 0);
+  }
+  syncPills();
+
+  $("playBtn").addEventListener("click", () => { unlock(); toLobby(); });
+  $("versionTag").textContent = `UDO ${VERSION}`;
+  $("howBtn").addEventListener("click", () => { howEl.classList.remove("hide"); howEl.scrollTop = 0; });
+  $("howClose").addEventListener("click", () => howEl.classList.add("hide"));
+  $("soundBtn").addEventListener("click", () => { soundOn = !soundOn; store.set("sound", soundOn); syncPills(); unlock(); sfx.join(); });
+  $("revBtn").addEventListener("click", () => {
+    reverseOn = !reverseOn; store.set("reverse2", reverseOn); syncPills();
+    if (reverseOn) { unlock(); sfx.reverse(); }
+  });
+
+  // ---------- easter egg 1: "When pigs fly" (tap the O in the logo 7 times) ----------
+  let pigTaps = 0, pigTimer = null, pigUntil = 0;
+  const toastEl = $("toast");
+  function toast(text, ms = 2600) {
+    toastEl.textContent = text; toastEl.classList.add("show");
+    clearTimeout(toastEl._t); toastEl._t = setTimeout(() => toastEl.classList.remove("show"), ms);
+  }
+  function flyAcross(emoji) {
+    const f = document.createElement("div");
+    f.className = "flyer"; f.textContent = emoji; f.style.top = (25 + Math.random() * 35) + "%";
+    document.body.append(f);
+    setTimeout(() => f.remove(), 3400);
+  }
+  function walkAcross(emoji) {                         // for birds that can't fly
+    const f = document.createElement("div");
+    f.className = "flyer walker"; f.textContent = emoji;
+    document.body.append(f);
+    setTimeout(() => f.remove(), 5600);
+  }
+  $("logoO").addEventListener("click", () => {
+    if (state !== "intro") return;
+    unlock();
+    clearTimeout(pigTimer); pigTimer = setTimeout(() => pigTaps = 0, 2500);   // taps must come in a burst
+    pigTaps++;
+    sfx.tick();
+    if (pigTaps === 7) {
+      pigTaps = 0;
+      $("logoEmoji").textContent = "🐷"; pigUntil = now() + 3200;
+      flyAcross("🐷"); sfx.oink();
+      toast("When pigs fly.");
+    }
+  });
+  $("menuBtn").addEventListener("click", () => {
+    if (state === "lobby") { howEl.classList.remove("hide"); howEl.scrollTop = 0; }
+    else endGame();
+  });
+  $("doneBtn").addEventListener("click", () => {
+    if (!dareDone) {                                  // first tap: the dare is done
+      dareDone = true;
+      for (const v of victims) v.dares++;
+      renderScore(); cardEl.classList.add("done"); $("doneBtn").textContent = "Continue"; sfx.done();
+    } else { closeDare(); nextRound(); }               // second tap: next round
+  });
+  $("ownBtn").addEventListener("click", () => { ownDares = !ownDares; renderTask(); });
+  $("rerollBtn").addEventListener("click", () => renderTask(true));
+  $("endBtn").addEventListener("click", endGame);
+  $("againBtn").addEventListener("click", showIntro);    // a full reset, back to the intro and its settings
+  $("freshBtn").addEventListener("click", toLobby);      // straight into the lobby so more fingers can join
+  $("shareBtn").addEventListener("click", shareResults);
+
+  // ---------- your dares ----------
+  function renderMine() {
+    const list = $("myList"); list.textContent = "";
+    myDares.forEach((d, i) => {
+      const li = document.createElement("li");
+      const span = document.createElement("span"); span.textContent = d;
+      const del = document.createElement("button"); del.textContent = "✕"; del.setAttribute("aria-label", "Remove this dare");
+      del.addEventListener("click", () => { myDares.splice(i, 1); saveMine(); });
+      li.append(span, del); list.append(li);
+    });
+    $("myEmpty").hidden = myDares.length > 0;
+    $("onlyOurs").hidden = myDares.length === 0;
+    $("onlyOurs").setAttribute("aria-pressed", onlyOurs);
+  }
+  function saveMine() { store.set("mydares", myDares); store.set("onlyours", onlyOurs); rebuildDecks(); renderMine(); syncPills(); }
+  $("myBtn").addEventListener("click", () => { renderMine(); mineEl.classList.remove("hide"); mineEl.scrollTop = 0; });
+  $("myClose").addEventListener("click", () => { $("myInput").blur(); mineEl.classList.add("hide"); });
+  $("onlyOurs").addEventListener("click", () => { onlyOurs = !onlyOurs; saveMine(); });
+  $("myForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const v = $("myInput").value.trim().replace(/\s+/g, " ");
+    if (!v) return;
+    if (!myDares.includes(v)) myDares.unshift(v);
+    $("myInput").value = "";
+    saveMine();
+  });
+
+  // ---------- install & offline ----------
+  let installPrompt = null;
+  addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; $("installBtn").hidden = false; });
+  $("installBtn").addEventListener("click", async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    try { await installPrompt.userChoice; } catch (e) {}
+    installPrompt = null; $("installBtn").hidden = true;
+  });
+  addEventListener("appinstalled", () => { $("installBtn").hidden = true; });
+  if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});      // caches the game so it plays offline
+  }
+
+  // ================= Touch =================
+  cv.addEventListener("pointerdown", e => {
+    if (state === "intro" || state === "end") return;
+    e.preventDefault(); unlock();
+    const t = now(), x = e.clientX, y = e.clientY;
+
+    if (state === "lobby") {
+      if (dist(x, y) < SLOT + ringR * 0.7) { slotFlash = t; return; }    // the centre belongs to the emoji
+      const n = freeNum();
+      const p = newStats({ n, color: COLORS[(n - 1) % COLORS.length], x, y, down: true, born: t });
+      players.push(p); ptr.set(e.pointerId, p); lastChange = t; sfx.join();
+      return;
+    }
+
+    // In game, touch IDs change on every lift, so a returning finger is matched by position
+    let best = null, bd = Math.max(90 * U, ringR * 2.2);
+    for (const p of players) {
+      if (p.down) continue;
+      const d = Math.hypot(p.x - x, p.y - y);
+      if (d < bd) { bd = d; best = p; }
+    }
+    if (best) { best.down = true; best.x = x; best.y = y; best.born = t; ptr.set(e.pointerId, best); }
+  });
+
+  cv.addEventListener("pointermove", e => {
+    const p = ptr.get(e.pointerId);
+    if (p && p.down) { p.x = e.clientX; p.y = e.clientY; }
+  });
+
+  // is a lift at this moment a mistake?
+  function mistakeKind(rt) {
+    if (!reel.landed) return "early";
+    if (rt < CFG.earlyMs) return "gun";
+    if (!target.lift) return "wrong";
+    return null;
+  }
+
+  function onUp(e) {
+    const p = ptr.get(e.pointerId);
+    if (!p) return;
+    ptr.delete(e.pointerId);
+    const ts = stamp(e);
+    if (state === "lobby") { players = players.filter(q => q !== p); lastChange = now(); return; }
+
+    p.down = false;
+    const live = state === "roll" || state === "landed" || state === "grace";
+    if (!live || p.liftAt !== null) return;
+    if (target && target.chicken && reel.landed) return;   // chicken round: nothing counts
+
+    p.liftAt = ts; p.rt = relTime(ts);
+    const kind = mistakeKind(p.rt);
+
+    if (state === "grace") {                          // lifted in the same instant as a mistake
+      if (kind) victims.push(p);
+      else { p.rts.push(p.rt); sfx.lift(); burst(p); }
+      return;
+    }
+    if (kind) { victims = [p]; victimKind = kind; state = "grace"; phaseAt = now(); return; }
+
+    p.rts.push(p.rt); sfx.lift(); burst(p);           // a good lift
+    if (players.every(q => q.liftAt !== null)) resolveLift();
+  }
+  cv.addEventListener("pointerup", onUp);
+  cv.addEventListener("pointercancel", onUp);
+  for (const ev of ["touchstart", "touchmove", "gesturestart"]) {
+    cv.addEventListener(ev, e => e.preventDefault(), { passive: false });
+  }
+  document.addEventListener("contextmenu", e => { if (e.target.tagName !== "INPUT") e.preventDefault(); });
+
+  // ================= Reel =================
+  // Fast blur, then a slow readable crawl over the last five, with a near miss of the
+  // opposite kind right before the stop, and sometimes a fake stop on that near miss.
+  function buildReel(t) {
+    const lift = Math.random() < CFG.liftChance;
+    const fly = reverse ? !lift : lift;                 // UDO Reverse: lift for what doesn't fly
+    // easter egg 2: once in a while the reel lands on a chicken. Does a chicken fly? Nobody knows. Free round.
+    const chicken = !reverse && round >= CFG.chickenFrom && Math.random() < CFG.chickenChance;
+    const tgt = chicken ? "🐔" : rnd(fly ? FLY : NOFLY), bait = rnd(fly ? NOFLY : FLY);
+    const items = [];
+    const fastN = 8 + (Math.random() * 8 | 0);
+    for (let i = 0; i < fastN; i++) items.push(rnd(ALL));
+    items.push(rnd(ALL), rnd(ALL), rnd(ALL), bait, tgt);
+
+    const speed = Math.min(1.5, 1 + Math.floor(round / CFG.speedEvery) * 0.1);
+    const N = items.length, slow = [85, 130, 190, 270, 380];
+    const segs = []; let acc = 0;
+    for (let i = 0; i < N - 1; i++) {
+      if (i === N - 2 && Math.random() < CFG.fakeStopChance) {
+        segs.push({ from: i, dur: CFG.fakeStopMs, move: false, start: acc }); acc += CFG.fakeStopMs;
+      }
+      const j = i - (N - 1 - slow.length);
+      const dur = (j >= 0 ? slow[j] : 50) / speed;
+      segs.push({ from: i, dur, move: true, start: acc }); acc += dur;
+    }
+    target = chicken ? { e: tgt, fly: null, lift: false, chicken: true } : { e: tgt, fly, lift };
+    reel = { items, segs, total: acc, start: t, seg: 0, pos: 0, landed: false };
+  }
+
+  function updateReel(t) {
+    const e = t - reel.start, segs = reel.segs;
+    if (e >= reel.total) return true;
+    while (reel.seg < segs.length - 1 && e >= segs[reel.seg + 1].start) {
+      const done = segs[reel.seg];
+      if (done.move && done.dur >= 110) sfx.tick();      // click only on the slow final steps
+      reel.seg++;
+    }
+    const s = segs[reel.seg], k = (e - s.start) / s.dur;
+    reel.pos = s.move ? s.from + (s.dur >= 110 ? 1 - (1 - k) * (1 - k) : k) : s.from;
+    return false;
+  }
+
+  // ================= Game flow =================
+  function toLobby() {
+    hideScreens(); closeDare();
+    players = []; ptr.clear(); state = "lobby"; lastChange = now();
+    round = 0; roundsPlayed = 0; reverseRounds = 0; chickens = 0; lastReverse = false; reverse = false;
+    streakP = null; caughtStreak = 0; clearRound(); particles = [];
+  }
+  function enterReady() {
+    state = "ready"; readyStart = null; allUpSince = null;
+    reverse = reverseOn && round >= CFG.reverseFrom && !lastReverse && Math.random() < CFG.reverseChance;
+    lastReverse = reverse;
+    if (reverse) sfx.reverse();
+  }
+  function clearRound() { reel = null; target = null; victims = []; fastest = null; struck = []; pending = []; resultNote = ""; }
+  function nextRound() { round++; clearRound(); enterReady(); }
+
+  function startRoll(t) {
+    for (const p of players) { p.liftAt = null; p.rt = null; }
+    clearRound();
+    buildReel(t);
+    roundsPlayed++; if (reverse) reverseRounds++;
+    if (!seen) { seen = true; store.set("seen", true); }
+    state = "roll";
+  }
+  function land(t) {
+    reel.pos = reel.items.length - 1; reel.landed = true;
+    state = "landed"; landAt = t;
+    if (target.chicken) { chickens++; sfx.cluck(); } else sfx.green();
+    windowMs = Math.max(CFG.windowMin, CFG.windowStart - round * CFG.windowStep);
+  }
+
+  function resolveLift() {
+    const good = players.filter(p => p.rt !== null && p.rt >= CFG.earlyMs);
+    if (good.length) fastest = good.reduce((m, p) => (p.rt < m.rt ? p : m));
+
+    const stayed = players.filter(p => p.liftAt === null);
+    if (stayed.length) { victims = stayed; victimKind = "nolift"; reveal(); return; }
+
+    // Everyone lifted. The slowest takes a strike, unless it's a photo finish.
+    const slowest = Math.max(...players.map(p => p.rt));
+    struck = players.filter(p => p.rt >= slowest - CFG.tieMs);
+    if (struck.length === players.length) {
+      struck = []; resultNote = "Locked in, nice.";
+    } else if (struck.length > 1) {
+      resultNote = `Photo finish! ${struck.map(p => "#" + p.n).join(" and ")} both take a strike.`;
+      if (struck.length > 2) resultNote = `Photo finish! ${struck.map(p => "#" + p.n).join(", ")} all take a strike.`;
+    } else {
+      resultNote = `#${struck[0].n} was slowest. Strike!`;
+    }
+    for (const p of struck) { p.strikes++; p.strikesTotal++; }
+    pending = struck.filter(p => p.strikes >= CFG.strikesForDare);
+    for (const p of pending) p.strikes = 0;
+    if (struck.length) sfx.strike(); else sfx.safe();
+    state = "result"; phaseAt = now();
+  }
+
+  function reveal() {
+    for (const v of victims) { v.caught++; if (victimKind === "early" || victimKind === "gun" || victimKind === "wrong") v.fooled++; }
+    // easter egg 3: the same player caught three times in a row becomes a dodo
+    if (victims.length === 1) { caughtStreak = streakP === victims[0] ? caughtStreak + 1 : 1; streakP = victims[0]; }
+    else { streakP = null; caughtStreak = 0; }
+    dodoNow = caughtStreak === 3 ? streakP : null;
+    if (dodoNow) dodoNow.dodo = true;
+    victimWhy = whyText();
+    state = "reveal"; phaseAt = now(); floodAt = phaseAt; sfx.caught();
+  }
+
+  function whyText() {
+    const one = victims.length === 1, v = victims[0], e = target ? target.e : "";
+    switch (victimKind) {
+      case "early":  return one ? `Jumped ${-v.rt} ms before green.` : "Jumped before green.";
+      case "gun":    return one ? `Lifted ${v.rt} ms after green. Nobody's that fast. That was a guess.` : "Lifted too fast to be real. That was a guess.";
+      case "wrong":  return reverse ? `Reverse round: ${e} flies, so you freeze.` : `${e} doesn't fly${one ? `, and you lifted at ${v.rt} ms` : ""}.`;
+      case "nolift": return reverse ? `Reverse round: ${e} doesn't fly, so you lift.` : `${e} flies, and you didn't lift in time.`;
+      case "strikes":return one ? `Second strike. Slowest again at ${v.rt} ms.` : "Second strike for both. Slowest again.";
+    }
+    return "";
+  }
+
+  // ---------- dare card ----------
+  const cardEl = $("card");
+  const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const chip = p => `<span class="chip" style="--c:${p.color}">#${p.n}</span>`;
+  function listChips(ps) {
+    const c = ps.map(chip);
+    return c.length <= 1 ? c.join("") : c.slice(0, -1).join(", ") + " and " + c[c.length - 1];
+  }
+  function timeText(p) {
+    if (p.rt === null) return !reel || !reel.landed ? "held" : (target.lift ? "no lift" : "froze");
+    if (p.rt < 0) return `${-p.rt} ms early`;
+    return `${p.rt} ms`;
+  }
+  // reroll: "Another dare" always gives a fresh dare from the deck
+  function renderTask(reroll = false) {
+    const task = $("cTask");
+    let others = players.filter(q => !victims.includes(q));
+    $("rerollBtn").hidden = ownDares;
+    if (ownDares) {
+      task.innerHTML = others.length
+        ? `${listChips(others)}, give ${listChips(victims)} a dare.`
+        : `Everyone's caught. Give each other a dare.`;
+      $("ownBtn").textContent = "🃏 Use a game dare";
+      return;
+    }
+    $("ownBtn").textContent = "🙋 Let us give the dare";
+    if (!reroll && others.length && Math.random() < 0.3) {
+      if (others.length > 1) others = others.filter(q => q !== lastPicker);   // don't pick the same picker twice running
+      const g = rnd(others); lastPicker = g;
+      task.innerHTML = `${chip(g)} picks a dare for ${listChips(victims)}.`;
+    } else {
+      task.textContent = victims.length > 1 ? nextGroupDare() : nextDare();
+    }
+  }
+  function renderScore() {
+    $("cScore").innerHTML = players.slice().sort((a, b) => a.n - b.n)
+      .map(p => `<span style="--c:${p.color}"><i></i>#${p.n} <b>${p.dares}</b></span>`).join("");
+  }
+  function openDare() {
+    dareDone = false; cardEl.classList.remove("done"); $("doneBtn").textContent = "Dare done";
+    $("cNum").innerHTML = victims.map(v => `<span style="color:${v.color}">#${v.n}</span>`).join(" ");
+    $("cWhy").textContent = victimWhy;
+    $("cEgg").textContent = dodoNow ? "Three in a row. You're officially a dodo. 🦤" : "";
+    if (dodoNow) { setTimeout(() => { sfx.dodo(); walkAcross("🦤"); }, 500); }
+    renderTask();
+    const fast = target && target.lift && reel.landed
+      ? players.filter(p => !victims.includes(p) && p.rt !== null && p.rt >= CFG.earlyMs).sort((a, b) => a.rt - b.rt)[0] : null;
+    $("cTimes").innerHTML = players.slice().sort((a, b) => a.n - b.n)
+      .map(p => `<span class="${victims.includes(p) ? "me" : ""}" style="--c:${p.color}"><i></i>#${p.n} <b>${p === fast ? "⚡ " : ""}${timeText(p)}</b></span>`).join("");
+    renderScore();
+    // one player: the card turns to face their side of the phone
+    const deg = victims.length === 1 ? Math.round(faceAngle(victims[0].x, victims[0].y) / (Math.PI / 2)) * 90 : 0;
+    cardEl.style.setProperty("--rot", deg + "deg");
+    // size the card for the space it has once rotated: a sideways card gets the screen's height as its width
+    const sideways = Math.abs(deg % 180) === 90;
+    const boxW = sideways ? H : W, boxH = sideways ? W : H;
+    const cw = Math.round(Math.min(boxW * 0.92, boxW > boxH * 1.2 ? 620 : 360));
+    cardEl.style.width = cw + "px";
+    cardEl.style.maxHeight = Math.round(boxH * 0.92) + "px";
+    cardEl.classList.toggle("wide", cw >= 480);
+    cardEl.classList.toggle("tight", boxH * 0.92 < 320);
+    $("dare").classList.add("show"); cardEl.scrollTop = 0;
+    cardEl.classList.remove("in"); void cardEl.offsetWidth; cardEl.classList.add("in");
+    state = "dare";
+  }
+  function closeDare() { $("dare").classList.remove("show"); cardEl.classList.remove("in"); }
+
+  // ---------- end of game & awards ----------
+  let awardData = [], endSummary = "";
+  function computeAwards() {
+    const byN = players.slice().sort((a, b) => a.n - b.n);
+    const winners = (key, pick) => {                   // everyone tied for the best value
+      const vals = byN.map(key).filter(v => v !== null);
+      if (!vals.length) return null;
+      const best = pick(...vals);
+      return { best, ps: byN.filter(p => key(p) === best) };
+    };
+    const avg = p => p.rts.length ? Math.round(p.rts.reduce((a, b) => a + b, 0) / p.rts.length) : null;
+    const out = [];
+    const fast = winners(avg, Math.min);
+    if (fast) out.push({ e: "⚡", title: "Fastest finger", ps: fast.ps, tail: `averaged ${fast.best} ms` });
+    const cold = winners(p => p.caught, Math.min);
+    if (cold && cold.ps.length < byN.length) out.push({ e: "🧊", title: "Ice cold", ps: cold.ps, tail: cold.best === 0 ? "never got caught" : `got caught ${times(cold.best)}` });
+    const fooled = winners(p => p.fooled, Math.max);
+    if (fooled && fooled.best > 0) out.push({ e: "🙈", title: "Easily fooled", ps: fooled.ps, tail: `lifted at the wrong moment ${times(fooled.best)}` });
+    const slow = winners(p => p.strikesTotal, Math.max);
+    if (slow && slow.best > 0) out.push({ e: "🐢", title: "Slowpoke", ps: slow.ps, tail: `took ${slow.best === 1 ? "a strike" : slow.best + " strikes"}` });
+    const magnet = winners(p => p.dares, Math.max);
+    if (magnet && magnet.best > 0) out.push({ e: "😈", title: "Dare magnet", ps: magnet.ps, tail: `did ${magnet.best === 1 ? "a dare" : magnet.best + " dares"}` });
+    const dodos = byN.filter(p => p.dodo);
+    if (dodos.length) out.push({ e: "🦤", title: "Certified dodo", ps: dodos, tail: "got caught three times in a row" });
+    return out;
+  }
+  function endGame() {
+    closeDare();
+    if (roundsPlayed === 0) { toLobby(); return; }
+    awardData = computeAwards();
+    const byN = players.slice().sort((a, b) => a.n - b.n);
+    const totalDares = byN.reduce((a, p) => a + p.dares, 0);
+    endSummary = `${roundsPlayed} ${roundsPlayed === 1 ? "round" : "rounds"} flown, ${totalDares} ${totalDares === 1 ? "dare" : "dares"} done` +
+      (reverseRounds ? `, ${reverseRounds} flipped` : "") +
+      (chickens ? `, and ${chickens === 1 ? "one mysterious chicken" : chickens + " mysterious chickens"}.` : ".");
+    $("endSub").textContent = endSummary;
+    $("awards").innerHTML = awardData.map(a => `<div class="award"><span class="e">${a.e}</span><div><b>${a.title}</b><p>${listChips(a.ps)} ${esc(a.tail)}</p></div></div>`).join("")
+      || `<div class="award"><span class="e">🕊️</span><div><b>Too quick to call</b><p>Play a few more rounds and the awards show up.</p></div></div>`;
+    $("endScore").innerHTML = byN.map(p => `<span style="--c:${p.color}"><i></i>#${p.n} <b>${p.dares}</b></span>`).join("");
+    $("shareBtn").disabled = false; $("shareBtn").textContent = "Share results";
+    hideScreens(); endEl.classList.remove("hide"); endEl.scrollTop = 0;
+    state = "end"; sfx.done();
+  }
+
+  // ---------- shareable results card ----------
+  function rr(g, x, y, w, h, r) {
+    g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+  }
+  async function renderShareCard() {
+    try { await document.fonts.ready; } catch (e) {}
+    const list = awardData.length ? awardData : [{ e: "🕊️", title: "Too quick to call", ps: [], tail: "Play a few more rounds next time." }];
+    const shown = list.slice(0, 5);
+    const chipRows = Math.ceil(players.length / 5);
+    // tall enough for everything, never shorter than a 4:5 post
+    const Wc = 1080, Hc = Math.max(1350, 530 + shown.length * 158 + 70 + chipRows * 64 + 260);
+    const c = document.createElement("canvas"); c.width = Wc; c.height = Hc;
+    const g = c.getContext("2d");
+    g.fillStyle = "#000"; g.fillRect(0, 0, Wc, Hc);
+    // the players' own colours as blobs in the corners
+    const cols = players.slice().sort((a, b) => a.n - b.n).map(p => p.color);
+    const spots = [[60, 40, 120], [1040, 150, 90], [70, Hc + 50, 120], [1030, Hc + 40, 130]];
+    spots.forEach(([x, y, r], i) => {
+      const col = cols[i % cols.length] || COLORS[i];
+      g.fillStyle = col; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+      g.strokeStyle = col; g.lineWidth = r * 0.16; g.beginPath(); g.arc(x, y, r * 1.26, 0, TAU); g.stroke();
+    });
+    // logo
+    g.textBaseline = "alphabetic"; g.textAlign = "left";
+    g.font = `800 200px ${FONT}`; g.fillStyle = "#fff";
+    const ud = g.measureText("UD").width, ringD = 160, lx = (Wc - (ud + 14 + ringD)) / 2, ly = 300;
+    g.fillText("UD", lx, ly);
+    g.strokeStyle = AMBER; g.lineWidth = 20;
+    g.beginPath(); g.arc(lx + ud + 14 + ringD / 2, ly - 72, ringD / 2 - 10, 0, TAU); g.stroke();
+    g.font = `78px ${EMOJI_FONT}`; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("🏆", lx + ud + 14 + ringD / 2, ly - 70);
+    // heading
+    g.textAlign = "center"; g.textBaseline = "alphabetic";
+    g.font = `800 72px ${FONT}`; g.fillStyle = "#fff"; g.fillText("Everyone's grounded", Wc / 2, 420);
+    g.font = `italic 44px ${SERIF}`; g.fillStyle = "rgba(255,255,255,.75)"; g.fillText(endSummary, Wc / 2, 480, Wc - 120);
+    // awards
+    let y = 530;
+    for (const a of shown) {
+      const h = 140;
+      g.fillStyle = "rgba(255,255,255,.08)"; rr(g, 80, y, Wc - 160, h, 32); g.fill();
+      g.font = `64px ${EMOJI_FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#fff";
+      g.fillText(a.e, 160, y + h / 2);
+      g.textAlign = "left"; g.textBaseline = "alphabetic";
+      g.font = `800 42px ${FONT}`; g.fillStyle = "#fff"; g.fillText(a.title, 230, y + 58);
+      // chips, then the rest of the line
+      let x = 230; const cy = y + 106;
+      g.font = `800 32px ${FONT}`;
+      for (const p of a.ps) {
+        const w = g.measureText(`#${p.n}`).width + 28;
+        g.fillStyle = p.color; rr(g, x, cy - 30, w, 42, 21); g.fill();
+        g.fillStyle = "#000"; g.fillText(`#${p.n}`, x + 14, cy + 2); x += w + 8;
+      }
+      g.font = `500 32px ${FONT}`; g.fillStyle = "rgba(255,255,255,.8)";
+      let tail = a.tail;
+      while (tail && x + g.measureText(tail).width > Wc - 110) tail = tail.slice(0, -2).trimEnd() + "…";
+      g.fillText(tail, x + 4, cy + 2);
+      y += h + 18;
+    }
+    // everyone's dare tally
+    const byN = players.slice().sort((a, b) => a.n - b.n);
+    g.textAlign = "left"; g.font = `500 30px ${FONT}`; g.fillStyle = "rgba(255,255,255,.6)";
+    g.fillText("Dares done", 80, y + 40);
+    let x = 80, ry = y + 70;
+    g.font = `800 32px ${FONT}`;
+    for (const p of byN) {
+      const txt = `#${p.n}  ${p.dares}`, w = g.measureText(txt).width + 64;
+      if (x + w > Wc - 80) { x = 80; ry += 64; }
+      g.fillStyle = "rgba(255,255,255,.1)"; rr(g, x, ry, w, 52, 26); g.fill();
+      g.fillStyle = p.color; g.beginPath(); g.arc(x + 26, ry + 26, 11, 0, TAU); g.fill();
+      g.fillStyle = "#fff"; g.fillText(txt, x + 46, ry + 37);
+      x += w + 10;
+    }
+    // footer
+    g.textAlign = "center"; g.font = `italic 46px ${SERIF}`; g.fillStyle = "#fff";
+    g.fillText("Lift for what flies. Freeze for what doesn't.", Wc / 2, Hc - 150);
+    return c;
+  }
+  async function shareResults() {
+    const btn = $("shareBtn");
+    btn.disabled = true; btn.textContent = "Making the card…";
+    try {
+      const c = await renderShareCard();
+      const blob = await new Promise(res => c.toBlob(res, "image/png"));
+      const file = new File([blob], "udo-results.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: "UDO", text: "Our UDO results 🏆" }); } catch (e) {}
+        btn.textContent = "Share results";
+      } else {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob); a.download = "udo-results.png";
+        document.body.append(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        btn.textContent = "Image saved";
+      }
+    } catch (e) { btn.textContent = "Couldn't make the image"; }
+    btn.disabled = false;
+  }
+
+  // ================= Loop =================
+  const menuBtn = $("menuBtn");
+  function setMenu(text) {
+    menuBtn.classList.toggle("show", !!text);
+    if (text && menuBtn.textContent !== text) menuBtn.textContent = text;
+  }
+
+  function frame() {
+    const t = now();
+    ringR += (targetRing() - ringR) * 0.18;                 // blobs shrink smoothly as players join
+
+    let menu = "";
+    if (state === "lobby") {
+      const n = players.length;
+      if (n === 0) menu = "How to play";
+      // short and sweet: first-timers get a few words, everyone else just the finger
+      setHint(n === 0 ? (seen ? "☝️" : "One finger each") : n === 1 ? "One more ☝️" : "Hold still…");
+      if (n >= 2 && t - lastChange >= CFG.armMs) { round = 0; enterReady(); sfx.go(); }
+
+    } else if (state === "ready") {
+      const downCount = players.filter(p => p.down).length;
+      if (downCount === players.length) {
+        allUpSince = null;
+        const faster = round > 0 && round % CFG.speedEvery === 0;
+        setHint(reverse ? '<span class="r">UDO Reverse!</span> Lift for what doesn\'t fly'
+          : faster ? "Speeding up ⚡"
+          : !seen ? 'Wait for <span class="g">green</span>' : "");   // only on a phone's very first round
+        if (readyStart === null) { readyStart = t; readyDelay = (reverse ? 1500 : 500) + Math.random() * 700; }
+        else if (t - readyStart >= readyDelay) startRoll(t);
+      } else {
+        readyStart = null; setHint("Fingers back");
+        if (downCount === 0) {
+          if (allUpSince === null) allUpSince = t;
+          if (t - allUpSince > 1200) menu = "End game";       // a way out when everyone has let go
+        } else allUpSince = null;
+      }
+
+    } else if (state === "roll") {
+      setHint(reverse ? '<span class="r">🔄 Reverse</span>' : "");
+      if (updateReel(t)) land(t);
+
+    } else if (state === "landed") {
+      if (target.chicken) {                                     // easter egg 2
+        setHint('Does a chicken fly? <span class="y">Nobody knows.</span> Free round.', true);
+        if (t - landAt >= windowMs + 1600) nextRound();
+      } else {
+        setHint("");
+        if (t - landAt >= windowMs) {
+          if (target.lift) resolveLift();
+          else { state = "safe"; phaseAt = t; sfx.safe(); setHint(nextStillLine(), true); }
+        }
+      }
+
+    } else if (state === "grace") {
+      if (t - phaseAt >= CFG.graceMs) reveal();
+
+    } else if (state === "result") {
+      setHint(resultNote, true);
+      if (t - phaseAt >= 1600) {
+        if (pending.length) { victims = pending; victimKind = "strikes"; reveal(); }
+        else nextRound();
+      }
+
+    } else if (state === "reveal") {
+      setHint("");
+      if (t - phaseAt >= 900) openDare();
+
+    } else if (state === "safe") {
+      if (t - phaseAt >= 800) nextRound();
+    }
+
+    if (state === "intro" || state === "dare" || state === "end") setHint("");
+    setMenu(menu);
+    draw(t);
+    requestAnimationFrame(frame);
+  }
+
+  // ================= Drawing =================
+  const faceAngle = (x, y) => Math.atan2(y - H / 2, x - W / 2) - Math.PI / 2;
+  const labelSize = () => Math.round(Math.max(16, Math.min(24 * U, ringR * 0.38)));
+
+  // Text near a finger, turned to read upright for the person sitting at that edge
+  function label(p, text, color, size, off, weight = 700) {
+    ctx.save();
+    ctx.translate(p.x, p.y); ctx.rotate(faceAngle(p.x, p.y));
+    ctx.fillStyle = color; ctx.font = `${weight} ${size}px ${FONT}`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(text, 0, -off);
+    ctx.restore();
+  }
+  function numberLabel(p) {
+    const size = labelSize();
+    ctx.save();
+    ctx.translate(p.x, p.y); ctx.rotate(faceAngle(p.x, p.y));
+    ctx.font = `800 ${size}px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const txt = `#${p.n}`, w = ctx.measureText(txt).width, y = -(ringR + size * 0.95);
+    ctx.fillStyle = "#fff"; ctx.fillText(txt, 0, y);
+    ctx.fillStyle = AMBER;                                     // strike pips
+    for (let i = 0; i < p.strikes; i++) { ctx.beginPath(); ctx.arc(w / 2 + size * 0.45 + i * size * 0.5, y, size * 0.18, 0, TAU); ctx.fill(); }
+    ctx.restore();
+  }
+  function fingerCircle(p, t) {
+    const grow = Math.min(1, (t - p.born) / 160), pulse = Math.sin(t / 170) * 3 * U;
+    if (p.down) {
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, rIn() * grow, 0, TAU); ctx.fill();
+      ctx.strokeStyle = p.color; ctx.lineWidth = Math.max(4, ringR * 0.1);
+      ctx.beginPath(); ctx.arc(p.x, p.y, (ringR + pulse) * grow, 0, TAU); ctx.stroke();
+    } else {
+      ctx.save();
+      ctx.globalAlpha = 0.55; ctx.strokeStyle = p.color; ctx.lineWidth = 3 * U; ctx.setLineDash([6 * U, 8 * U]);
+      ctx.beginPath(); ctx.arc(p.x, p.y, ringR, 0, TAU); ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // little burst in your colour when you lift in time
+  function burst(p) {
+    const t = now();
+    for (let i = 0; i < 10; i++) {
+      const a = Math.random() * TAU, s = (90 + Math.random() * 120) * U;
+      particles.push({ x: p.x, y: p.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, c: p.color, born: t });
+    }
+  }
+  function drawParticles(t) {
+    particles = particles.filter(q => t - q.born < 500);
+    for (const q of particles) {
+      const k = (t - q.born) / 500, d = (1 - Math.pow(1 - k, 2)) * 0.5;
+      ctx.globalAlpha = 1 - k; ctx.fillStyle = q.c;
+      ctx.beginPath(); ctx.arc(q.x + q.vx * d, q.y + q.vy * d, 5 * U * (1 - k * 0.6), 0, TAU); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawSlot(t) {
+    const cx = W / 2, cy = H / 2, R = SLOT, RR = R + 10 * U;
+    const revRound = reverse && state !== "lobby";
+    ctx.fillStyle = revRound ? "rgba(255,64,217,.10)" : "rgba(255,255,255,.05)";   // ghost well
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = revRound ? "rgba(255,64,217,.25)" : "rgba(255,255,255,.09)";
+    ctx.beginPath(); ctx.arc(cx, cy, RR, 0, TAU); ctx.stroke();
+
+    if (reel && reel.landed) {
+      // green means go (in reverse rounds too)
+      let col = GREEN;
+      if (target.chicken) col = "#ffd23f";
+      else if (state === "result" && struck.length) col = AMBER;
+      else if (state === "grace" && victims.length) col = victims[0].color;
+      if (col === GREEN) { ctx.fillStyle = "rgba(94,227,74,.12)"; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill(); }
+      ctx.strokeStyle = col; ctx.lineWidth = 5 * U;
+      ctx.beginPath(); ctx.arc(cx, cy, RR, 0, TAU); ctx.stroke();
+      if (revRound) {                                           // keep a pink outer ring as the reverse reminder
+        ctx.strokeStyle = REV; ctx.lineWidth = 2.5 * U;
+        ctx.beginPath(); ctx.arc(cx, cy, RR + 8 * U, 0, TAU); ctx.stroke();
+      }
+      const k = (t - landAt) / 420;                             // shockwave when it turns green
+      if (k < 1) {
+        ctx.globalAlpha = 1 - k; ctx.lineWidth = 3 * U; ctx.strokeStyle = GREEN;
+        ctx.beginPath(); ctx.arc(cx, cy, RR + k * 36 * U, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1;
+      }
+    } else {
+      // three arcs: drift when idle, whirl while rolling (a fake stop keeps them spinning). Pink in reverse rounds.
+      const rolling = state === "roll" || state === "grace";
+      const flash = Math.max(0, 1 - (t - slotFlash) / 500);
+      const spin = rolling ? t / 150 : t / (revRound ? 900 : 2600);
+      ctx.lineCap = "round";
+      ctx.strokeStyle = revRound ? REV : rolling ? "rgba(255,255,255,.6)" : `rgba(255,255,255,${0.25 + flash * 0.6})`;
+      ctx.lineWidth = (revRound ? 4 : 3) * U;
+      for (let i = 0; i < 3; i++) {
+        const a = (revRound ? -spin : spin) + i * TAU / 3;      // reverse rounds even spin the other way
+        ctx.beginPath(); ctx.arc(cx, cy, RR, a, a + TAU / 3 * 0.55); ctx.stroke();
+      }
+      if (revRound && state === "ready") drawSprite("🔄", cx, cy, 0.7, 0.85);
+    }
+
+    if (!reel) return;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.clip();
+    if (!reel.landed) {
+      const i0 = Math.round(reel.pos);
+      for (let i = i0 - 1; i <= i0 + 1; i++) {
+        if (i < 0 || i >= reel.items.length) continue;
+        const off = (i - reel.pos) * STEP;
+        drawSprite(reel.items[i], cx, cy + off, 1, Math.max(0, 1 - Math.abs(off) / (R * 1.25)));
+      }
+    } else {
+      const k = Math.min(1, (t - landAt) / 260);
+      drawSprite(target.e, cx, cy, 1 + 0.15 * Math.sin(k * Math.PI));
+    }
+    ctx.restore();
+  }
+
+  // Chooser-style highlight: the caught player's colour floods the screen and closes in on their finger
+  function drawFlood(t) {
+    const size = labelSize();
+    const k = Math.min(1, (t - floodAt) / 650), e = 1 - Math.pow(1 - k, 3);
+    const r = Math.hypot(W, H) * (1 - e) + (ringR + size * 3.1) * e;
+    ctx.save();
+    ctx.fillStyle = victims[0].color; ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = "destination-out";
+    for (const v of victims) { ctx.beginPath(); ctx.arc(v.x, v.y, r, 0, TAU); ctx.fill(); }
+    ctx.restore();
+    for (const v of victims) {
+      fingerCircle(v, t); numberLabel(v);
+      label(v, timeText(v), "#fff", Math.round(size * 0.75), ringR + size * 2.15, 800);
+    }
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+    if (state === "intro" || state === "end") return;
+    if ((state === "reveal" || state === "dare") && victims.length) { drawFlood(t); return; }
+
+    drawSlot(t);
+    const arming = state === "lobby" && players.length >= 2;
+    const settled = state === "result";
+    const size = labelSize();
+
+    for (const p of players) {
+      fingerCircle(p, t);
+
+      const hl = (state === "grace" && victims.includes(p)) ? "#fff" : (settled && struck.includes(p)) ? AMBER : null;
+      if (hl) {
+        const k = (Math.sin(t / 90) + 1) / 2;
+        ctx.save(); ctx.globalAlpha = 0.5 + k * 0.5;
+        ctx.strokeStyle = hl; ctx.lineWidth = 4 * U;
+        ctx.beginPath(); ctx.arc(p.x, p.y, ringR + (10 + k * 6) * U, 0, TAU); ctx.stroke();
+        ctx.restore();
+      }
+      if (arming) {
+        const k = Math.min(1, (t - lastChange) / CFG.armMs);
+        ctx.strokeStyle = "#fff"; ctx.lineWidth = 3 * U; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.arc(p.x, p.y, ringR + 10 * U, -Math.PI / 2, -Math.PI / 2 + k * TAU); ctx.stroke();
+      }
+
+      numberLabel(p);
+      const off = ringR + size * 2.15, small = Math.round(size * 0.75);
+      if (settled && struck.includes(p)) label(p, `${pending.includes(p) ? "2nd strike" : "strike"} · ${p.rt} ms`, AMBER, small, off, 800);
+      else if (settled && fastest === p) label(p, `⚡ ${p.rt} ms`, "#fff", small, off, 800);
+      else if (p.rt !== null && p.rt >= 0 && (state === "landed" || settled)) label(p, `${p.rt} ms`, "rgba(255,255,255,.75)", small, off, 600);
+    }
+    drawParticles(t);
+  }
+
+  showIntro();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
