@@ -2,6 +2,70 @@
 
 All notable changes to UDO are listed here, newest first.
 
+## [0.3] - 2026-10-25
+
+Built to stay fun past round 5: a winner to play for, more to think about, and a pace that keeps climbing.
+
+### Added
+- **Knockout mode** (the default; switch to Endless in the intro).
+  - Everyone has 3 lives (2 with 6 or more players), drawn as the pieces of your ring. Each catch costs one, plus the dare.
+  - **Comeback:** out of lives? Once a game, do a second dare the table picks and you're back with 1 life.
+  - **Sudden death:** a round that would knock out everyone left takes no lives.
+  - **Final two** is announced and the reel goes to at least 1.6×.
+  - **Last finger standing** wins: their colour floods the screen with a 👑, and the end screen, awards and share card name them.
+- **About 80 emoji** (from 24), all from 2020 or earlier so older phones draw them.
+- **Gotchas:** 🐧 🐣 🐥 🐛 🦤 🥚 🕷️ look like they should fly and don't. About 1 in 8 "doesn't fly" rounds at the start, rising to almost 1 in 2.
+- **🎯 Spotlight rounds** (from round 5, 3+ players left): the ring turns one player's colour and only they play. Everyone else must freeze whatever lands.
+- **⚡ Rapid fire** (from round 6, now and then): three reels back to back with almost no pause.
+- Level-up, spotlight and winner sounds.
+
+### Changed
+- **Faster, and you feel it.**
+  - A new level every 3 rounds (was 5), with a "Level N ⚡" banner and ticks that climb in pitch.
+  - The reel speeds up 15% per level, up to 2.2× (was 10% per step, up to 1.5×).
+  - The slow crawl shortens from 5 steps to 4, then 3, and the blur before it shortens too.
+  - The time to lift starts at 1.1 s (was 1.4 s) and shrinks to 0.55 s (was 0.8 s).
+  - Pauses between rounds are about a third shorter.
+- One banner line before a round says what's special about it: spotlight, reverse, final two, rapid fire or a new level.
+- The intro has a Knockout / Endless switch, and How to play covers lives, comebacks, gotchas, spotlight, rapid fire and levels.
+
+## [0.2.2] - 2026-10-24
+
+Less on screen, and nobody aims for the middle.
+
+### Changed
+- **Seat guides instead of a finger by the circle.** The empty lobby used to show "☝️" or "One finger each" right beside the big centre circle, which read as "press here". Now four marigold spots pulse near the edges (one per side in portrait, four corners in landscape) and the centre shows a faint 🐦, so it reads as the display. A tap in the middle gets "Near the edge, not the middle". The spots go away once two fingers are down.
+- **Far less text during play.**
+  - Player numbers show only while seats are being taken, and on the caught screen.
+  - No per-finger times while lifting; the lift burst is the feedback.
+  - After a round, only the struck finger ("Strike", "2nd strike!") and the fastest ("⚡ 180 ms", 3+ players) get a word.
+  - The centre speaks only for rare results ("Photo finish!", "Dead heat."), not "#3 slowest".
+  - Shorter hints: "Reverse: lift if it can't fly" before a reverse round, nothing during the spin; "Chicken? Nobody knows. Free round."
+- **Strikes are notches on your ring**, the side facing the reel, instead of small dots next to your number.
+- **Dare card:** "This round" listed every player's time; now it shows only the fastest. The tally lists only players who have done a dare.
+- How to play and the README say where fingers go: near your edge, on the dotted spots.
+
+### Fixed
+- Labels placed outside a finger now check that the whole line fits on screen, not just its middle (a top-corner "Strike" could be cut off in landscape).
+
+## [0.2.1] - 2026-10-24
+
+Fixes from a playtest at 4, 6 and 8 players.
+
+### Fixed
+- **Text no longer piles up.** Player labels flip to the outer side of a finger when they would run into the reel, and the centre text stays on one line and hides any copy that would sit on a player. Results in the centre are short ("#3 slowest. Strike!"); each finger's own label carries the time.
+- **Player colours no longer look like game signals.** Green (go), amber (strike), yellow (chicken) and the reverse magenta are out of the player palette.
+- **Photo finish is rare again.** It now needs the slowest fingers within 0.01 s (about what a phone's touch sampling can tell apart), not 0.05 s. At 0.05 s two or more players took a strike in about 6 of 10 lift rounds with 4 players and 8 of 10 with 8; now it's about 1 in 5. With 2 players, rounds with no strike drop from about half to about 1 in 9.
+- **Computers without a touchscreen** now see "UDO needs a touchscreen" and the link to open on a phone, instead of a lobby they can't leave.
+- **Finger limit.** The lobby stops at what the phone can track (5 on iPhones, up to 10 elsewhere) and says "Full at 5" instead of silently ignoring the next finger.
+
+### Added
+- The share card and share message now carry the game's link, so friends who see the results can play.
+- Link previews: description and Open Graph tags plus a 1200 x 630 preview image (`og-image.png`), so a pasted link shows a card in WhatsApp and elsewhere.
+
+### Changed
+- Release links in this changelog point to the real repository.
+
 ## [0.2] - 2026-10-16
 
 ### Added
@@ -69,5 +133,8 @@ The first public version. Everything below is new.
 ### Before 0.1
 UDO grew out of a run of quick prototypes (a "Chidiya Udd" finger game with voice cues, a cartoon version, a plain chooser-style version and several playtest rounds). Their best ideas are folded into 0.1; the prototypes themselves aren't versioned.
 
-[0.2]: https://github.com/YOUR-USERNAME/udo/releases/tag/v0.2
-[0.1]: https://github.com/YOUR-USERNAME/udo/releases/tag/v0.1
+[0.3]: https://github.com/abhiggt/UDO/releases/tag/v0.3
+[0.2.2]: https://github.com/abhiggt/UDO/releases/tag/v0.2.2
+[0.2.1]: https://github.com/abhiggt/UDO/releases/tag/v0.2.1
+[0.2]: https://github.com/abhiggt/UDO/releases/tag/v0.2
+[0.1]: https://github.com/abhiggt/UDO/releases/tag/v0.1

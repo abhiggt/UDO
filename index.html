@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- UDO 0.2 · Lift for what flies. Freeze for what doesn't. -->
+<!-- UDO 0.3 · Lift for what flies. Freeze for what doesn't. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -9,7 +9,19 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="UDO">
 <meta name="theme-color" content="#000000">
-<title>UDO</title>
+<title>UDO · the finger party game for one phone</title>
+<meta name="description" content="Lift for what flies. Freeze for what doesn't. Chidiya Udd rebuilt for one phone in the middle of the table, with strikes, photo finishes and dares. Free, no app, plays offline.">
+<link rel="canonical" href="https://abhiggt.github.io/UDO/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="UDO">
+<meta property="og:title" content="UDO · Lift for what flies. Freeze for what doesn't.">
+<meta property="og:description" content="Chidiya Udd for one phone and a table full of friends. Fingers down, watch the reel, lift or freeze. Caught? Do the dare.">
+<meta property="og:url" content="https://abhiggt.github.io/UDO/">
+<meta property="og:image" content="https://abhiggt.github.io/UDO/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The UDO logo with a bird in the O, and the line: Lift for what flies. Freeze for what doesn't.">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
@@ -43,11 +55,12 @@
 
   /* ---------- In-game hints: one copy above the circle (upside-down), one below ---------- */
   .hint {
-    position: fixed; left: 50%; width: 88vw; text-align: center; pointer-events: none; z-index: 2;
+    position: fixed; left: 50%; max-width: 92vw; white-space: nowrap; text-align: center; pointer-events: none; z-index: 2;
     font-size: clamp(18px, 5.4vmin, 24px); font-weight: 700; line-height: 1.2; color: #fff;
   }
-  #hintTop { top: calc(var(--cy) - var(--slot) - 30px); transform: translate(-50%, -100%) rotate(180deg); }
-  #hintBot { top: calc(var(--cy) + var(--slot) + 30px); transform: translateX(-50%); }
+  /* --k shrinks a copy to fit the gap between players' labels (set from JS) */
+  #hintTop { top: calc(var(--cy) - var(--slot) - 30px); transform: translate(-50%, -100%) rotate(180deg) scale(var(--k, 1)); }
+  #hintBot { top: calc(var(--cy) + var(--slot) + 30px); transform: translateX(-50%) scale(var(--k, 1)); }
   .hint .g { color: var(--green); }
   .hint .r { color: var(--rev); }
   .hint .y { color: #ffd23f; }
@@ -141,8 +154,16 @@
     border: 0; border-radius: 999px; background: var(--marigold); color: #000;
     font-size: clamp(20px, 6vmin, 24px); font-weight: 800;
   }
+  .play[hidden] { display: none; }
   #playBtn { animation: nudge 2.2s ease-in-out infinite; }
   @keyframes nudge { 0%, 70%, 100% { transform: scale(1); } 80% { transform: scale(1.04); } 90% { transform: scale(.99); } }
+  /* shown instead of Play on computers with no touchscreen */
+  .notice { margin-top: clamp(18px, 4vh, 26px); padding: 16px 18px 18px; border-radius: 22px; background: rgba(255,255,255,.07); }
+  .notice[hidden] { display: none; }
+  .notice p { margin: 0; font-size: 16px; line-height: 1.4; color: rgba(255,255,255,.8); }
+  .notice b { color: #fff; }
+  .notice .url { margin: 10px 0 0; font-size: clamp(20px, 5vmin, 24px); font-weight: 800; color: var(--marigold); -webkit-user-select: all; user-select: all; word-break: break-all; }
+  .notice .play { margin-top: 14px; animation: none; }
   .pills { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
   .pill {
     padding: 9px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.22);
@@ -165,6 +186,8 @@
   .switch[aria-checked="true"] .thumb { transform: translateX(18px); }
   .switch[aria-checked="true"] .track { background: var(--green); }
   #revBtn[aria-checked="true"] .track { background: var(--rev); }
+  #koBtn[aria-checked="true"] .track { background: var(--marigold); }
+  @media (min-width: 560px) { #koBtn { grid-column: 1 / -1; } }   /* the mode switch gets its own row on wide screens */
 
   .sheet h2, .end-title { margin: 0 0 14px; font-size: clamp(32px, 10vmin, 44px); font-weight: 800; letter-spacing: -.02em; line-height: 1; }
   .sub { margin: 0 0 16px; font-family: var(--serif); font-style: italic; font-size: clamp(19px, 5.4vmin, 22px); line-height: 1.25; color: rgba(255,255,255,.75); }
@@ -209,6 +232,7 @@
   /* ---------- Chips ---------- */
   .chip { display: inline-block; padding: 0 10px; border-radius: 999px; background: var(--c); color: #000; font-weight: 800; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips[hidden], .lbl[hidden] { display: none; }
   .chips span { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px 4px 6px; border-radius: 999px;
                 background: rgba(255,255,255,.09); font-size: clamp(13px, 3.7vmin, 14px); color: rgba(255,255,255,.85); }
   .chips span.me { box-shadow: inset 0 0 0 2px var(--c); color: #fff; }
@@ -237,6 +261,12 @@
   .card .why { margin-top: 6px; font-family: var(--serif); font-style: italic; font-size: clamp(18px, 5.2vmin, 21px); line-height: 1.2; color: rgba(255,255,255,.78); }
   .card .egg { margin-top: 8px; font-family: var(--serif); font-style: italic; font-size: clamp(18px, 5.2vmin, 21px); line-height: 1.2; color: #ffd23f; }
   .card .egg:empty { display: none; }
+  /* knockout: lives left after this catch */
+  .card .lives { margin-top: 8px; font-size: clamp(16px, 4.6vmin, 19px); font-weight: 800; letter-spacing: .02em; }
+  .card .lives:empty { display: none; }
+  .card .lives .out { color: var(--rev); }
+  .card .comeback { margin: 0 0 10px; padding: 12px; font-size: clamp(15px, 4.4vmin, 17px); border-color: var(--marigold); color: var(--marigold); }
+  .ghost-btn[hidden] { display: none; }
   .card .task { margin: clamp(12px, 3.8vmin, 18px) 0; font-size: clamp(21px, 6.4vmin, 27px); font-weight: 800; line-height: 1.15; letter-spacing: -.01em; }
   .card .chips { margin-bottom: clamp(12px, 3.6vmin, 16px); }
   .stamp {
@@ -311,7 +341,13 @@
       <div class="tile"><span class="e">😈</span><b>Caught?</b><strong>Dare</strong></div>
     </div>
     <button class="play" id="playBtn">Play</button>
+    <div class="notice" id="touchNote" hidden>
+      <p><b>UDO needs a touchscreen.</b> Open it on a phone and put it in the middle of the table:</p>
+      <p class="url" id="playUrl"></p>
+      <button class="play" id="copyUrl">Copy link</button>
+    </div>
     <div class="switches">
+      <button class="switch" id="koBtn" role="switch" aria-checked="true"><span id="koLbl">🏆 Knockout · last finger wins</span><span class="track"><span class="thumb"></span></span></button>
       <button class="switch" id="revBtn" role="switch" aria-checked="false"><span>🔄 UDO Reverse</span><span class="track"><span class="thumb"></span></span></button>
       <button class="switch" id="soundBtn" role="switch" aria-checked="true"><span id="soundLbl">🔊 Sound</span><span class="track"><span class="thumb"></span></span></button>
     </div>
@@ -327,16 +363,20 @@
 <section class="screen sheet hide" id="how">
   <div class="inner">
     <h2>How to play</h2>
-    <div class="rule"><span class="e">☝️</span><p><b>Fingers down.</b> One each, outside the circle, phone flat in the middle. Hold still and the game begins.</p></div>
+    <div class="rule"><span class="e">☝️</span><p><b>Fingers down near the edge.</b> Phone flat in the middle, one finger each on your side of the screen (the dotted spots show where). The big circle is the reel, not a button. Hold still and the game begins.</p></div>
     <div class="rule"><span class="e">🟢</span><p><b>Only lift on green.</b> Lift while it's rolling, or a split second after it turns green, and you're caught.</p></div>
     <div class="rule"><span class="e">🐦</span><p><b>It flies?</b> Lift before time's up, or you're caught. If everyone lifts, the slowest finger takes a strike. Two strikes and you're caught.</p></div>
-    <div class="rule"><span class="e">📸</span><p><b>Photo finish.</b> If the slowest fingers are within 0.05 seconds of each other, they all take a strike. If everyone's that close, nobody does.</p></div>
+    <div class="rule"><span class="e">📸</span><p><b>Photo finish.</b> If the slowest fingers are within 0.01 seconds of each other, they all take a strike. If everyone's that close, it's a dead heat and nobody does.</p></div>
     <div class="rule"><span class="e">🐘</span><p><b>It doesn't fly?</b> Freeze. Lift and you're caught, along with anyone who lifts in the same instant.</p></div>
+    <div class="rule"><span class="e">🐧</span><p><b>Watch for gotchas.</b> Penguins, chicks, caterpillars, eggs: they look like they should fly, and they don't. More of them turn up as the levels climb.</p></div>
     <div class="rule"><span class="e">🔄</span><p><b>UDO Reverse</b> (switch it on in the intro). Now and then a round with a <span class="r">pink ring</span> flips the rule: lift for what doesn't fly, freeze for what does.</p></div>
     <div class="rule"><span class="e">😈</span><p><b>Caught?</b> Do the dare. Don't like it? Roll another, or let the others give you one. Tap Dare done, then Continue.</p></div>
+    <div class="rule"><span class="e">🏆</span><p><b>Knockout</b> (on unless you pick Endless). Everyone has 3 lives (2 with 6 or more players), shown as the pieces of your ring. Each catch costs one. Out of lives? You can come back once by doing a second dare the table picks. Last finger standing wins. If a round would knock out everyone left, it's sudden death and nobody goes out.</p></div>
+    <div class="rule"><span class="e">🎯</span><p><b>Spotlight.</b> When the ring turns one player's colour, only they play. Everyone else freezes, whatever lands. Lift and you're caught.</p></div>
+    <div class="rule"><span class="e">⚡</span><p><b>Rapid fire.</b> Three reels back to back with almost no pause. Keep your finger down.</p></div>
     <div class="rule"><span class="e">🥚</span><p><b>Three easter eggs</b> are hidden in here. All bird-brained. None of them help you win.</p></div>
-    <div class="rule"><span class="e">⚡</span><p><b>Every 5 rounds</b> it speeds up.</p></div>
-    <div class="rule"><span class="e">🏆</span><p><b>End game</b> for awards you can share with the group.</p></div>
+    <div class="rule"><span class="e">🚀</span><p><b>A new level every 3 rounds.</b> The reel spins faster, the slow crawl gets shorter and you get less time to lift.</p></div>
+    <div class="rule"><span class="e">🥇</span><p><b>End game</b> any time for awards you can share with the group.</p></div>
     <button class="white-btn" id="howClose">Got it</button>
     <p class="version" id="versionTag"></p>
   </div>
@@ -361,7 +401,7 @@
 <!-- ============ End of game ============ -->
 <section class="screen hide" id="end">
   <div class="inner">
-    <h2 class="end-title">Everyone's grounded</h2>
+    <h2 class="end-title" id="endTitle">Everyone's grounded</h2>
     <p class="sub" id="endSub"></p>
     <div id="awards"></div>
     <p class="lbl" style="margin-top:14px">Dares done</p>
@@ -380,6 +420,7 @@
       <div class="num" id="cNum"></div>
       <div class="why" id="cWhy"></div>
       <div class="egg" id="cEgg"></div>
+      <div class="lives" id="cLives"></div>
       <div class="task" id="cTask"></div>
       <div class="task-actions">
         <button id="rerollBtn">🎲 Another dare</button>
@@ -387,10 +428,11 @@
       </div>
     </div>
     <div class="col-b">
-      <p class="lbl">This round</p>
+      <p class="lbl" id="cTimesLbl">Fastest this round</p>
       <div class="chips" id="cTimes"></div>
-      <p class="lbl dares">Dares done</p>
+      <p class="lbl dares" id="cScoreLbl">Dares done</p>
       <div class="chips dares" id="cScore"></div>
+      <button class="ghost-btn comeback" id="comebackBtn" hidden>🔁 Come back: do one more dare</button>
       <button class="done-btn" id="doneBtn">Dare done</button>
       <button class="end-link" id="endBtn">End game</button>
     </div>
@@ -402,27 +444,49 @@
   // ================= Tunables =================
   const CFG = {
     armMs: 1800,          // everyone holds still this long to start
-    windowStart: 1400,    // time to lift after the ring turns green (ms), round 1
-    windowMin: 800,       // shortest it gets
-    windowStep: 40,       // shrinks each round
+    windowStart: 1100,    // time to lift after the ring turns green (ms), round 1
+    windowMin: 550,       // shortest it gets (people lift in ~250-350 ms, so this is tight but fair)
+    windowStep: 45,       // shrinks each round
     liftChance: 0.55,     // how often the right move is to lift
     fakeStopChance: 0.35, // reel pauses on the bait, then clicks once more
-    fakeStopMs: 600,
-    speedEvery: 5,        // reel gets 10% faster every this many rounds (up to 50%)
+    fakeStopMs: 520,
+    speedEvery: 3,        // a new level every this many rounds...
+    speedStep: 0.15,      // ...each one spins the reel this much faster...
+    speedMax: 2.2,        // ...up to this
+    duelSpeed: 1.6,       // knockout final two: at least this fast
+    gotchaBase: 0.12,     // chance a "doesn't fly" pick is a gotcha (🐧 🐥 🐛…) on level 1...
+    gotchaStep: 0.07,     // ...rising this much per level...
+    gotchaMax: 0.45,      // ...up to this
+    lives: 3,             // knockout: catches before you're out...
+    bigTable: 6, bigLives: 2,   // ...but 2 each from this many players, so big games don't drag
+    spotFrom: 4,          // 🎯 Spotlight rounds can show up from this round on...
+    spotChance: 0.2,      // ...this often (3+ players left, never twice in a row)
+    rapidFrom: 5,         // ⚡ Rapid fire bursts can start from this round on...
+    rapidChance: 0.12,    // ...this often...
+    rapidLen: 3,          // ...this many reels back to back...
+    rapidGap: 6,          // ...and at least this many rounds after the last burst
+    resultMs: 1100, safeMs: 550, revealMs: 750, champMs: 2800,   // pauses between beats
     reverseFrom: 3,       // UDO Reverse rounds can show up from this round on...
     reverseChance: 0.22,  // ...this often, never twice in a row
     chickenFrom: 2,       // easter egg: from this round on...
     chickenChance: 0.04,  // ...about 1 round in 25 lands on a chicken
     strikesForDare: 2,
-    tieMs: 50,            // photo finish: slowest lifts this close together all take a strike
+    tieMs: 10,            // photo finish: slowest lifts this close together all take a strike (about touch-sampling resolution, so it stays rare)
+    maxPlayers: 10,       // hard cap; phones that track fewer fingers lower it (see fingerCap)
     earlyMs: 100,         // nobody reacts this fast: a lift inside this is a guess, and gets caught
     graceMs: 150,         // after a wrong lift, anyone else who wrongly lifts this soon is caught with them
     volume: 0.35,
   };
 
-  const FLY   = ["🐦","🦅","🦉","🦋","🕊️","🦜","🐝","🦇","✈️","🚁","🚀","🎈"];
-  const NOFLY = ["🐘","🐄","🐕","🐈","🐟","🦁","🐢","🌳","🏠","🚗","🚂","🍌"];
-  const ALL = [...FLY, ...NOFLY];
+  // Only emoji from 2020 or earlier, so older phones draw them all
+  const FLY   = ["🐦","🦅","🦉","🦋","🕊️","🦜","🐝","🦇","✈️","🚁","🚀","🎈",
+                 "🦆","🦢","🦩","🐞","🪰","🦟","🛸","🪁","🛩️","🛫","🛰️","🪂","🐉","🧚","👼","🦸","💸"];
+  const NOFLY = ["🐘","🐄","🐕","🐈","🐟","🦁","🐢","🌳","🏠","🚗","🚂","🍌",
+                 "🦒","🦓","🐎","🐖","🐐","🐑","🐫","🦏","🦛","🐊","🐍","🐌","🦀","🐙","🐳","🐸",
+                 "🐇","🐻","🐼","🦘","🦔","🚜","🚲","🛵","🚢","🚌","🛺","🍉","🥭","🍕","🗿","🥥","🛋️"];
+  // Gotchas look like they should fly and don't. They turn up more as the levels climb.
+  const GOTCHA = ["🐧","🐣","🐥","🐛","🦤","🥚","🕷️"];
+  const ALL = [...FLY, ...NOFLY, ...GOTCHA];
 
   const DARES = [
     "Do your loudest crow call. Kaa kaa!",
@@ -467,7 +531,8 @@
     "Do a slow-motion replay of how you all got caught.",
   ];
 
-  const COLORS = ["#ffb000","#ff2e88","#00d1c1","#5ee34a","#4d8dff","#ff5a36","#c39bff","#ffe14d","#ffffff","#ff8fd0"];
+  // Player colours avoid the game's signal colours: green (go), amber (strike), yellow (chicken), magenta (reverse)
+  const COLORS = ["#ff2e88","#00d1c1","#4d8dff","#ff5a36","#c39bff","#ffffff","#7fd8ff","#ff8fd0","#8a5cff","#e0c3a0"];
   const RING_BY_COUNT = [64, 64, 62, 56, 50, 45, 41, 38, 35, 33, 31]; // blob ring radius by player count
   const AMBER = "#ffb000", GREEN = "#5ee34a", REV = "#ff40d9", TAU = Math.PI * 2;
   const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
@@ -497,8 +562,9 @@
     };
   }
 
-  const VERSION = "0.2";
+  const VERSION = "0.3";
   let soundOn = store.get("sound", true), reverseOn = store.get("reverse2", false);   // UDO Reverse is off until you switch it on
+  let knockoutOn = store.get("knockout", true);     // Knockout (3 lives, last finger standing) unless switched to Endless
   let seen = store.get("seen", false);              // has this phone played a round before? (first-timers get a few hints)
   let myDares = store.get("mydares", []), onlyOurs = store.get("onlyours", false);
   if (!Array.isArray(myDares)) myDares = [];
@@ -559,9 +625,14 @@
   let players = [];
   const ptr = new Map();
   let state = "intro"; // intro | lobby | ready | roll | landed | grace | result | reveal | dare | safe | end
-  let lastChange = 0, round = 0, roundsPlayed = 0, slotFlash = 0, allUpSince = null;
+  let lastChange = 0, round = 0, roundsPlayed = 0, slotFlash = 0, centreTapAt = -1e9, allUpSince = null;
   let readyStart = null, readyDelay = 0;
   let reverse = false, lastReverse = false, reverseRounds = 0, chickens = 0;
+  // knockout: ko is fixed for a game when the lobby opens; champion is the last finger standing
+  let ko = true, champion = null, finalTwoShown = false, suddenDeath = false, comebackFor = null, startLives = 3;
+  // 🎯 spotlight: only this player plays the round · ⚡ rapid fire: reels left in the burst
+  let spot = null, lastSpotP = null, spotRounds = 0, rapidNow = false, rapidLeft = 0, rapidBursts = 0, lastRapidRound = -99;
+  let roundBanner = "";                              // the one line shown while fingers settle before a reel
   let streakP = null, caughtStreak = 0, dodoNow = null;   // easter egg 3: caught three times running
   let reel = null, target = null, landAt = 0, windowMs = 0;
   let victims = [], victimKind = "", victimWhy = "", phaseAt = 0, floodAt = 0;
@@ -570,6 +641,8 @@
   let ringR = 64, particles = [];
 
   const dist = (x, y) => Math.hypot(x - W / 2, y - H / 2);
+  // How many fingers this phone can track (iPhones report 5). Values under 2 are emulators or odd reports: ignore them.
+  const fingerCap = () => { const m = navigator.maxTouchPoints || 0; return m >= 2 ? Math.min(CFG.maxPlayers, m) : CFG.maxPlayers; };
   const freeNum = () => { let n = 1; while (players.some(p => p.n === n)) n++; return n; };
   const targetRing = () => RING_BY_COUNT[Math.min(Math.max(players.length, 1), 10)] * U;
   const rIn = () => ringR * 0.76;
@@ -577,7 +650,17 @@
   const stamp = e => (e.timeStamp > 0 && Math.abs(e.timeStamp - now()) < 1000) ? e.timeStamp : now();
   // ms relative to the ring turning green (negative = before it)
   const relTime = ts => Math.round(reel.landed ? ts - landAt : ts - (reel.start + reel.total));
-  const newStats = p => Object.assign(p, { liftAt: null, rt: null, strikes: 0, dares: 0, caught: 0, fooled: 0, strikesTotal: 0, rts: [], dodo: false });
+  const newStats = p => Object.assign(p, { liftAt: null, rt: null, strikes: 0, dares: 0, caught: 0, fooled: 0, strikesTotal: 0, rts: [], dodo: false,
+                                           lives: CFG.lives, out: false, comebackUsed: false });
+  const live = () => players.filter(p => !p.out);   // still in the game (everyone, in Endless)
+  // level 1, 2, 3… every few rounds; the reel speeds up with it, and more in rapid fire and the knockout final two
+  const level = () => Math.floor(round / CFG.speedEvery) + 1;
+  function currentSpeed() {
+    let s = Math.min(CFG.speedMax, 1 + (level() - 1) * CFG.speedStep);
+    if (rapidNow) s *= 1.15;
+    if (ko && players.length > 2 && live().length === 2) s = Math.max(s, CFG.duelSpeed);
+    return Math.min(CFG.speedMax * 1.15, s);
+  }
 
   const hintTop = $("hintTop"), hintBot = $("hintBot");
   // voice = the game talking (results, wisecracks), set in the serif
@@ -586,7 +669,46 @@
     if (hintBot._t === key) return;
     hintBot._t = key; hintTop.innerHTML = html; hintBot.innerHTML = html;
     hintTop.classList.toggle("voice", voice); hintBot.classList.toggle("voice", voice);
+    // one line only: shrink the text to fit the width instead of wrapping into the players' labels
+    for (const el of [hintTop, hintBot]) el.style.fontSize = "";
+    hintW = hintH = 0;
+    if (!html) return;
+    const maxW = W * 0.92, w = hintBot.offsetWidth;
+    if (w > maxW) {
+      const fs = parseFloat(getComputedStyle(hintBot).fontSize) * maxW / w;
+      for (const el of [hintTop, hintBot]) el.style.fontSize = fs + "px";
+    }
+    hintW = hintBot.offsetWidth; hintH = hintBot.offsetHeight;
   }
+  let hintW = 0, hintH = 0;
+  addEventListener("resize", () => { hintBot._t = null; });   // re-fit the centre text to the new width
+
+  // Keep the centre text clear of the players: each copy sits just outside the reel, and a copy that
+  // would overlap a finger or its labels is hidden (the labels carry the same news, so nothing is lost)
+  let labelBoxes = [];                                 // filled while drawing: {x0,y0,x1,y1} of every finger and label
+  function layoutHints() {
+    const cx = W / 2, cy = H / 2, gap = SLOT + 24 * U, pad = 6 * U;
+    hintTop.style.top = (cy - gap) + "px";
+    hintBot.style.top = (cy + gap) + "px";
+    for (const [el, s] of [[hintTop, -1], [hintBot, 1]]) {
+      let k = 1;
+      if (hintW) {
+        // the labels in this copy's band leave a free gap around the centre line: shrink the text into it
+        const y0 = s > 0 ? cy + gap : cy - gap - hintH, y1 = y0 + hintH;
+        let room = W / 2;
+        for (const b of labelBoxes) {
+          if (b.y0 > y1 + pad || b.y1 < y0 - pad) continue;
+          if (b.x0 <= cx && b.x1 >= cx) { room = 0; break; }          // something sits right on the centre line
+          room = Math.min(room, b.x1 < cx ? cx - b.x1 : b.x0 - cx);
+        }
+        k = Math.min(1, Math.max(0, (room - pad) * 2 / hintW));
+        if (k < 0.55) k = 0;                                           // too small to read: hide this copy
+      }
+      const kk = k.toFixed(2);
+      if (el._k !== kk) { el._k = kk; el.style.setProperty("--k", kk); el.style.visibility = k ? "" : "hidden"; }
+    }
+  }
+
   const STILL_LINES = ["Nerves of steel.", "Not a single twitch.", "Statues. Respect.", "Rock solid.", "Nobody fell for it."];
   const nextStillLine = deck(STILL_LINES);           // when everyone freezes correctly
 
@@ -615,7 +737,10 @@
   }
   const vib = ms => { if (navigator.vibrate) navigator.vibrate(ms); };
   const sfx = {
-    tick:    () => tone(1500, 1100, 0.03, 0.05, "square"),
+    tick:    () => { const k = 1 + Math.min(8, level() - 1) * 0.06; tone(1500 * k, 1100 * k, 0.03, 0.05, "square"); },   // climbs with the level
+    levelup: () => { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, f, 0.07, 0.06, "sine"), i * 60)); vib([15, 30, 15]); },
+    spot:    () => { tone(880, 880, 0.1, 0.07, "triangle"); setTimeout(() => tone(1320, 1320, 0.16, 0.06, "triangle"), 120); vib(30); },
+    champ:   () => { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, f * 1.01, i > 3 ? 0.3 : 0.12, 0.08, "sine"), i * 120)); },
     green:   () => { tone(523, 784, 0.12, 0.1, "sine"); vib(25); },
     lift:    () => tone(700, 1200, 0.07, 0.05, "sine"),
     strike:  () => { tone(420, 300, 0.18, 0.08); vib(40); },
@@ -649,16 +774,34 @@
   function syncPills() {
     $("soundBtn").setAttribute("aria-checked", soundOn); $("soundLbl").textContent = soundOn ? "🔊 Sound" : "🔇 Sound";
     $("revBtn").setAttribute("aria-checked", reverseOn);
+    $("koBtn").setAttribute("aria-checked", knockoutOn);
+    $("koLbl").textContent = knockoutOn ? "🏆 Knockout · last finger wins" : "♾️ Endless · no lives";
     $("myBtn").textContent = myDares.length ? `✍️ Your dares · ${myDares.length}` : "✍️ Your dares";
     $("myBtn").classList.toggle("on", myDares.length > 0);
   }
   syncPills();
 
   $("playBtn").addEventListener("click", () => { unlock(); toLobby(); });
+
+  // Where the game lives, for the computer notice and the share card (e.g. "abhiggt.github.io/UDO")
+  const GAME_URL = (location.protocol.startsWith("http") ? location.origin + location.pathname : "https://abhiggt.github.io/UDO/").replace(/index\.html$/, "");
+  const GAME_URL_SHORT = GAME_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  // A computer with no touchscreen can't hold two fingers down: point it at a phone instead of a lobby it can't leave
+  const noTouch = (navigator.maxTouchPoints || 0) === 0 && !(window.matchMedia && matchMedia("(any-pointer: coarse)").matches);
+  if (noTouch) {
+    $("playBtn").hidden = true; $("touchNote").hidden = false; $("playUrl").textContent = GAME_URL_SHORT;
+    $("copyUrl").addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(GAME_URL); $("copyUrl").textContent = "Copied. Open it on your phone"; }
+      catch (e) { $("copyUrl").textContent = "Copy it from above"; }
+    });
+  }
   $("versionTag").textContent = `UDO ${VERSION}`;
   $("howBtn").addEventListener("click", () => { howEl.classList.remove("hide"); howEl.scrollTop = 0; });
   $("howClose").addEventListener("click", () => howEl.classList.add("hide"));
   $("soundBtn").addEventListener("click", () => { soundOn = !soundOn; store.set("sound", soundOn); syncPills(); unlock(); sfx.join(); });
+  $("koBtn").addEventListener("click", () => {
+    knockoutOn = !knockoutOn; store.set("knockout", knockoutOn); syncPills(); unlock(); sfx.join();
+  });
   $("revBtn").addEventListener("click", () => {
     reverseOn = !reverseOn; store.set("reverse2", reverseOn); syncPills();
     if (reverseOn) { unlock(); sfx.reverse(); }
@@ -704,9 +847,38 @@
     if (!dareDone) {                                  // first tap: the dare is done
       dareDone = true;
       for (const v of victims) v.dares++;
+      if (comebackFor) {                              // comeback dare done: back in with one life
+        comebackFor.out = false; comebackFor.lives = 1;
+        toast(`#${comebackFor.n} is back in!`); comebackFor = null;
+      }
+      renderLives();
       renderScore(); cardEl.classList.add("done"); $("doneBtn").textContent = "Continue"; sfx.done();
-    } else { closeDare(); nextRound(); }               // second tap: next round
+      // knocked out with a comeback still unused: offer it (one player caught, and someone left to beat)
+      const v = victims[0];
+      $("comebackBtn").hidden = !(ko && victims.length === 1 && v.out && !v.comebackUsed && live().length >= 1);
+    } else { closeDare(); afterDare(); }              // second tap: next round, or the winner
   });
+  // 🔁 comeback: the table picks a second dare; do it and you're back with one life (once a game)
+  $("comebackBtn").addEventListener("click", () => {
+    const v = victims[0]; if (!v) return;
+    v.comebackUsed = true; comebackFor = v; dareDone = false;
+    $("comebackBtn").hidden = true;
+    cardEl.classList.remove("done"); $("doneBtn").textContent = "Dare done";
+    const others = players.filter(q => q !== v);
+    $("cTask").innerHTML = `Comeback! ${listChips(others)}, pick a dare for ${chip(v)}. Do it and you're back with 1 life.`;
+    $("rerollBtn").hidden = true; $("ownBtn").hidden = true;
+    sfx.spot();
+  });
+  function afterDare() {
+    if (ko && players.length > 1 && live().length <= 1) crown();
+    else nextRound();
+  }
+  // 👑 last finger standing: their colour floods the screen, then the end screen names them
+  function crown() {
+    champion = live()[0] || null;
+    if (!champion) { endGame(); return; }
+    victims = [champion]; state = "champ"; phaseAt = floodAt = now(); sfx.champ(); vib([40, 60, 40, 60, 160]);
+  }
   $("ownBtn").addEventListener("click", () => { ownDares = !ownDares; renderTask(); });
   $("rerollBtn").addEventListener("click", () => renderTask(true));
   $("endBtn").addEventListener("click", endGame);
@@ -762,7 +934,8 @@
     const t = now(), x = e.clientX, y = e.clientY;
 
     if (state === "lobby") {
-      if (dist(x, y) < SLOT + ringR * 0.7) { slotFlash = t; return; }    // the centre belongs to the emoji
+      if (dist(x, y) < SLOT + ringR * 0.7) { slotFlash = centreTapAt = t; return; }   // the centre belongs to the emoji
+      if (players.length >= fingerCap()) { slotFlash = t; return; }      // the phone can't track another finger
       const n = freeNum();
       const p = newStats({ n, color: COLORS[(n - 1) % COLORS.length], x, y, down: true, born: t });
       players.push(p); ptr.set(e.pointerId, p); lastChange = t; sfx.join();
@@ -772,7 +945,7 @@
     // In game, touch IDs change on every lift, so a returning finger is matched by position
     let best = null, bd = Math.max(90 * U, ringR * 2.2);
     for (const p of players) {
-      if (p.down) continue;
+      if (p.down || p.out) continue;                   // knocked-out players are free to take their fingers off
       const d = Math.hypot(p.x - x, p.y - y);
       if (d < bd) { bd = d; best = p; }
     }
@@ -785,8 +958,9 @@
   });
 
   // is a lift at this moment a mistake?
-  function mistakeKind(rt) {
+  function mistakeKind(p, rt) {
     if (!reel.landed) return "early";
+    if (spot && p !== spot) return "notyou";          // 🎯 spotlight: only one player may move this round
     if (rt < CFG.earlyMs) return "gun";
     if (!target.lift) return "wrong";
     return null;
@@ -800,12 +974,12 @@
     if (state === "lobby") { players = players.filter(q => q !== p); lastChange = now(); return; }
 
     p.down = false;
-    const live = state === "roll" || state === "landed" || state === "grace";
-    if (!live || p.liftAt !== null) return;
+    const inPlay = state === "roll" || state === "landed" || state === "grace";
+    if (!inPlay || p.liftAt !== null || p.out) return;
     if (target && target.chicken && reel.landed) return;   // chicken round: nothing counts
 
     p.liftAt = ts; p.rt = relTime(ts);
-    const kind = mistakeKind(p.rt);
+    const kind = mistakeKind(p, p.rt);
 
     if (state === "grace") {                          // lifted in the same instant as a mistake
       if (kind) victims.push(p);
@@ -815,7 +989,11 @@
     if (kind) { victims = [p]; victimKind = kind; state = "grace"; phaseAt = now(); return; }
 
     p.rts.push(p.rt); sfx.lift(); burst(p);           // a good lift
-    if (players.every(q => q.liftAt !== null)) resolveLift();
+    if (spot) {                                        // the spotlit player made it: round over, nobody else moves
+      if (p === spot) { fastest = p; state = "safe"; phaseAt = now(); sfx.safe(); setHint(`${p.rt} ms. Clean.`, true); }
+      return;
+    }
+    if (live().every(q => q.liftAt !== null)) resolveLift();
   }
   cv.addEventListener("pointerup", onUp);
   cv.addEventListener("pointercancel", onUp);
@@ -831,19 +1009,26 @@
     const lift = Math.random() < CFG.liftChance;
     const fly = reverse ? !lift : lift;                 // UDO Reverse: lift for what doesn't fly
     // easter egg 2: once in a while the reel lands on a chicken. Does a chicken fly? Nobody knows. Free round.
-    const chicken = !reverse && round >= CFG.chickenFrom && Math.random() < CFG.chickenChance;
-    const tgt = chicken ? "🐔" : rnd(fly ? FLY : NOFLY), bait = rnd(fly ? NOFLY : FLY);
+    const chicken = !reverse && !spot && round >= CFG.chickenFrom && Math.random() < CFG.chickenChance;
+    const L = level();
+    const gotchaP = Math.min(CFG.gotchaMax, CFG.gotchaBase + (L - 1) * CFG.gotchaStep);
+    const noFly = () => Math.random() < gotchaP ? rnd(GOTCHA) : rnd(NOFLY);
+    const tgt = chicken ? "🐔" : fly ? rnd(FLY) : noFly(), bait = fly ? noFly() : rnd(FLY);
+    // the readable crawl gets shorter as the levels climb (5 steps, then 4, then 3), and the blur before it too
+    const crawl = rapidNow || L >= 5 ? 3 : L >= 3 ? 4 : 5;
+    const fastN = Math.max(4, 9 - L) + (Math.random() * (rapidNow ? 3 : 6) | 0);
     const items = [];
-    const fastN = 8 + (Math.random() * 8 | 0);
     for (let i = 0; i < fastN; i++) items.push(rnd(ALL));
-    items.push(rnd(ALL), rnd(ALL), rnd(ALL), bait, tgt);
+    for (let i = 0; i < crawl - 2; i++) items.push(rnd(ALL));
+    items.push(bait, tgt);
 
-    const speed = Math.min(1.5, 1 + Math.floor(round / CFG.speedEvery) * 0.1);
-    const N = items.length, slow = [85, 130, 190, 270, 380];
+    const speed = currentSpeed();
+    const N = items.length, slow = [85, 130, 190, 270, 380].slice(-crawl);
     const segs = []; let acc = 0;
     for (let i = 0; i < N - 1; i++) {
-      if (i === N - 2 && Math.random() < CFG.fakeStopChance) {
-        segs.push({ from: i, dur: CFG.fakeStopMs, move: false, start: acc }); acc += CFG.fakeStopMs;
+      if (i === N - 2 && !rapidNow && Math.random() < CFG.fakeStopChance) {
+        const d = CFG.fakeStopMs / Math.sqrt(speed);
+        segs.push({ from: i, dur: d, move: false, start: acc }); acc += d;
       }
       const j = i - (N - 1 - slow.length);
       const dur = (j >= 0 ? slow[j] : 50) / speed;
@@ -872,12 +1057,42 @@
     players = []; ptr.clear(); state = "lobby"; lastChange = now();
     round = 0; roundsPlayed = 0; reverseRounds = 0; chickens = 0; lastReverse = false; reverse = false;
     streakP = null; caughtStreak = 0; clearRound(); particles = [];
+    ko = knockoutOn; champion = null; finalTwoShown = false; comebackFor = null;
+    spot = null; lastSpotP = null; spotRounds = 0; rapidNow = false; rapidLeft = 0; rapidBursts = 0; lastRapidRound = -99;
   }
+  // Decide what kind of round comes next, and the one line that announces it
   function enterReady() {
-    state = "ready"; readyStart = null; allUpSince = null;
-    reverse = reverseOn && round >= CFG.reverseFrom && !lastReverse && Math.random() < CFG.reverseChance;
+    state = "ready"; readyStart = null; allUpSince = null; suddenDeath = false;
+    const alive = live(), L = level();
+    const levelUp = round > 0 && round % CFG.speedEvery === 0;
+    const finalTwo = ko && players.length > 2 && alive.length === 2 && !finalTwoShown;
+    if (finalTwo) { finalTwoShown = true; rapidLeft = 0; }
+    // ⚡ rapid fire carries on, or (rarely) starts; it never mixes with reverse or spotlight
+    let rapidStart = false;
+    rapidNow = false;
+    if (rapidLeft > 0) { rapidNow = true; rapidLeft--; lastRapidRound = round; }
+    reverse = !rapidNow && reverseOn && round >= CFG.reverseFrom && !lastReverse && Math.random() < CFG.reverseChance;
     lastReverse = reverse;
+    // 🎯 spotlight needs a crowd to tempt: 3+ players left
+    const canSpot = !rapidNow && !reverse && !finalTwo && round >= CFG.spotFrom && alive.length >= 3 && !spot;
+    spot = null;
+    if (canSpot && Math.random() < CFG.spotChance) {
+      const pool = alive.filter(p => p !== lastSpotP);
+      spot = rnd(pool.length ? pool : alive); lastSpotP = spot; spotRounds++;
+    }
+    if (!rapidNow && !reverse && !spot && !finalTwo && round >= CFG.rapidFrom && round - lastRapidRound > CFG.rapidGap
+        && Math.random() < CFG.rapidChance) {
+      rapidNow = rapidStart = true; rapidLeft = CFG.rapidLen - 1; rapidBursts++; lastRapidRound = round;
+    }
+    roundBanner = spot ? `🎯 Only ${chip(spot)} plays`
+      : reverse ? '<span class="r">Reverse:</span> lift if it can\'t fly'
+      : finalTwo ? "Final two! ⚡"
+      : rapidStart ? "Rapid fire ×3 ⚡"
+      : levelUp ? `Level ${L} ⚡`
+      : !seen ? 'Wait for <span class="g">green</span>' : "";   // only on a phone's very first round
     if (reverse) sfx.reverse();
+    else if (spot) sfx.spot();
+    else if (finalTwo || rapidStart || levelUp) sfx.levelup();
   }
   function clearRound() { reel = null; target = null; victims = []; fastest = null; struck = []; pending = []; resultNote = ""; }
   function nextRound() { round++; clearRound(); enterReady(); }
@@ -898,22 +1113,23 @@
   }
 
   function resolveLift() {
-    const good = players.filter(p => p.rt !== null && p.rt >= CFG.earlyMs);
+    const alive = live();
+    const good = alive.filter(p => p.rt !== null && p.rt >= CFG.earlyMs);
     if (good.length) fastest = good.reduce((m, p) => (p.rt < m.rt ? p : m));
 
-    const stayed = players.filter(p => p.liftAt === null);
+    const stayed = alive.filter(p => p.liftAt === null);
     if (stayed.length) { victims = stayed; victimKind = "nolift"; reveal(); return; }
 
     // Everyone lifted. The slowest takes a strike, unless it's a photo finish.
-    const slowest = Math.max(...players.map(p => p.rt));
-    struck = players.filter(p => p.rt >= slowest - CFG.tieMs);
-    if (struck.length === players.length) {
-      struck = []; resultNote = "Locked in, nice.";
+    const slowest = Math.max(...alive.map(p => p.rt));
+    struck = alive.filter(p => p.rt >= slowest - CFG.tieMs);
+    // The amber ring on the slowest finger says it all; the centre speaks only for the rare ones
+    if (struck.length === alive.length) {
+      struck = []; resultNote = "Dead heat. No strike.";
     } else if (struck.length > 1) {
-      resultNote = `Photo finish! ${struck.map(p => "#" + p.n).join(" and ")} both take a strike.`;
-      if (struck.length > 2) resultNote = `Photo finish! ${struck.map(p => "#" + p.n).join(", ")} all take a strike.`;
+      resultNote = "Photo finish!";
     } else {
-      resultNote = `#${struck[0].n} was slowest. Strike!`;
+      resultNote = "";
     }
     for (const p of struck) { p.strikes++; p.strikesTotal++; }
     pending = struck.filter(p => p.strikes >= CFG.strikesForDare);
@@ -923,7 +1139,14 @@
   }
 
   function reveal() {
-    for (const v of victims) { v.caught++; if (victimKind === "early" || victimKind === "gun" || victimKind === "wrong") v.fooled++; }
+    for (const v of victims) { v.caught++; if (["early", "gun", "wrong", "notyou"].includes(victimKind)) v.fooled++; }
+    rapidLeft = 0;                                     // a catch ends a rapid-fire burst
+    // knockout: each catch costs a life. If this one would knock out everyone still in, nobody goes out.
+    if (ko) {
+      const alive = live();
+      suddenDeath = alive.length > 0 && alive.every(p => victims.includes(p) && p.lives <= 1);
+      if (!suddenDeath) for (const v of victims) { v.lives = Math.max(0, v.lives - 1); if (!v.lives) v.out = true; }
+    }
     // easter egg 3: the same player caught three times in a row becomes a dodo
     if (victims.length === 1) { caughtStreak = streakP === victims[0] ? caughtStreak + 1 : 1; streakP = victims[0]; }
     else { streakP = null; caughtStreak = 0; }
@@ -941,6 +1164,7 @@
       case "wrong":  return reverse ? `Reverse round: ${e} flies, so you freeze.` : `${e} doesn't fly${one ? `, and you lifted at ${v.rt} ms` : ""}.`;
       case "nolift": return reverse ? `Reverse round: ${e} doesn't fly, so you lift.` : `${e} flies, and you didn't lift in time.`;
       case "strikes":return one ? `Second strike. Slowest again at ${v.rt} ms.` : "Second strike for both. Slowest again.";
+      case "notyou": return spot ? `Spotlight was on #${spot.n}. Everyone else holds.` : "Not your round.";
     }
     return "";
   }
@@ -979,21 +1203,36 @@
       task.textContent = victims.length > 1 ? nextGroupDare() : nextDare();
     }
   }
+  // the card's tally lists only players who have done a dare, most first (the full table is on the end screen)
   function renderScore() {
-    $("cScore").innerHTML = players.slice().sort((a, b) => a.n - b.n)
-      .map(p => `<span style="--c:${p.color}"><i></i>#${p.n} <b>${p.dares}</b></span>`).join("");
+    const done = players.filter(p => p.dares > 0).sort((a, b) => b.dares - a.dares || a.n - b.n);
+    $("cScore").innerHTML = done.map(p => `<span style="--c:${p.color}"><i></i>#${p.n} <b>${p.dares}</b></span>`).join("");
+    $("cScore").hidden = $("cScoreLbl").hidden = !done.length;
+  }
+  // knockout: hearts left for whoever was just caught (or who is out)
+  function renderLives() {
+    const el = $("cLives");
+    if (!ko) { el.innerHTML = ""; return; }
+    if (suddenDeath) { el.innerHTML = '<span class="out">Sudden death:</span> nobody\'s out'; return; }
+    const one = victims.length === 1;
+    el.innerHTML = victims.map(v => v.out
+      ? `<span class="out">${one ? "Out of lives" : `#${v.n} is out`}</span>`
+      : `${one ? "" : `#${v.n} `}${"❤️".repeat(v.lives)}${"🖤".repeat(Math.max(0, startLives - v.lives))}`).join(" · ");
   }
   function openDare() {
     dareDone = false; cardEl.classList.remove("done"); $("doneBtn").textContent = "Dare done";
+    comebackFor = null; $("comebackBtn").hidden = true; $("ownBtn").hidden = false;
+    renderLives();
     $("cNum").innerHTML = victims.map(v => `<span style="color:${v.color}">#${v.n}</span>`).join(" ");
     $("cWhy").textContent = victimWhy;
     $("cEgg").textContent = dodoNow ? "Three in a row. You're officially a dodo. 🦤" : "";
     if (dodoNow) { setTimeout(() => { sfx.dodo(); walkAcross("🦤"); }, 500); }
     renderTask();
     const fast = target && target.lift && reel.landed
-      ? players.filter(p => !victims.includes(p) && p.rt !== null && p.rt >= CFG.earlyMs).sort((a, b) => a.rt - b.rt)[0] : null;
-    $("cTimes").innerHTML = players.slice().sort((a, b) => a.n - b.n)
-      .map(p => `<span class="${victims.includes(p) ? "me" : ""}" style="--c:${p.color}"><i></i>#${p.n} <b>${p === fast ? "⚡ " : ""}${timeText(p)}</b></span>`).join("");
+      ? live().filter(p => !victims.includes(p) && p.rt !== null && p.rt >= CFG.earlyMs).sort((a, b) => a.rt - b.rt)[0] : null;
+    // the caught player's own time is already in the line under their number; the card adds only who was quickest
+    $("cTimes").innerHTML = fast ? `<span style="--c:${fast.color}"><i></i>#${fast.n} <b>⚡ ${fast.rt} ms</b></span>` : "";
+    $("cTimes").hidden = $("cTimesLbl").hidden = !fast;
     renderScore();
     // one player: the card turns to face their side of the phone
     const deg = victims.length === 1 ? Math.round(faceAngle(victims[0].x, victims[0].y) / (Math.PI / 2)) * 90 : 0;
@@ -1013,7 +1252,7 @@
   function closeDare() { $("dare").classList.remove("show"); cardEl.classList.remove("in"); }
 
   // ---------- end of game & awards ----------
-  let awardData = [], endSummary = "";
+  let awardData = [], endSummary = "", endTitle = "Everyone's grounded";
   function computeAwards() {
     const byN = players.slice().sort((a, b) => a.n - b.n);
     const winners = (key, pick) => {                   // everyone tied for the best value
@@ -1024,6 +1263,8 @@
     };
     const avg = p => p.rts.length ? Math.round(p.rts.reduce((a, b) => a + b, 0) / p.rts.length) : null;
     const out = [];
+    if (champion) out.push({ e: "👑", title: "Last finger standing", ps: [champion],
+      tail: champion.comebackUsed ? "won after a comeback" : `won with ${champion.lives === 1 ? "1 life" : champion.lives + " lives"} left` });
     const fast = winners(avg, Math.min);
     if (fast) out.push({ e: "⚡", title: "Fastest finger", ps: fast.ps, tail: `averaged ${fast.best} ms` });
     const cold = winners(p => p.caught, Math.min);
@@ -1044,7 +1285,10 @@
     awardData = computeAwards();
     const byN = players.slice().sort((a, b) => a.n - b.n);
     const totalDares = byN.reduce((a, p) => a + p.dares, 0);
-    endSummary = `${roundsPlayed} ${roundsPlayed === 1 ? "round" : "rounds"} flown, ${totalDares} ${totalDares === 1 ? "dare" : "dares"} done` +
+    // the title names the winner in knockout; otherwise everyone's grounded
+    endTitle = champion ? `#${champion.n} wins 👑` : "Everyone's grounded";
+    $("endTitle").innerHTML = champion ? `<span style="color:${champion.color}">#${champion.n}</span> wins 👑` : "Everyone's grounded";
+    endSummary = `${roundsPlayed} ${roundsPlayed === 1 ? "round" : "rounds"} flown, level ${level()}, ${totalDares} ${totalDares === 1 ? "dare" : "dares"} done` +
       (reverseRounds ? `, ${reverseRounds} flipped` : "") +
       (chickens ? `, and ${chickens === 1 ? "one mysterious chicken" : chickens + " mysterious chickens"}.` : ".");
     $("endSub").textContent = endSummary;
@@ -1087,10 +1331,10 @@
     g.strokeStyle = AMBER; g.lineWidth = 20;
     g.beginPath(); g.arc(lx + ud + 14 + ringD / 2, ly - 72, ringD / 2 - 10, 0, TAU); g.stroke();
     g.font = `78px ${EMOJI_FONT}`; g.textAlign = "center"; g.textBaseline = "middle";
-    g.fillText("🏆", lx + ud + 14 + ringD / 2, ly - 70);
+    g.fillText(champion ? "👑" : "🏆", lx + ud + 14 + ringD / 2, ly - 70);
     // heading
     g.textAlign = "center"; g.textBaseline = "alphabetic";
-    g.font = `800 72px ${FONT}`; g.fillStyle = "#fff"; g.fillText("Everyone's grounded", Wc / 2, 420);
+    g.font = `800 72px ${FONT}`; g.fillStyle = champion ? champion.color : "#fff"; g.fillText(endTitle, Wc / 2, 420, Wc - 120);
     g.font = `italic 44px ${SERIF}`; g.fillStyle = "rgba(255,255,255,.75)"; g.fillText(endSummary, Wc / 2, 480, Wc - 120);
     // awards
     let y = 530;
@@ -1132,6 +1376,9 @@
     // footer
     g.textAlign = "center"; g.font = `italic 46px ${SERIF}`; g.fillStyle = "#fff";
     g.fillText("Lift for what flies. Freeze for what doesn't.", Wc / 2, Hc - 150);
+    // where to play: the card is how new tables find the game
+    g.font = `800 40px ${FONT}`; g.fillStyle = AMBER;
+    g.fillText(`Play free: ${GAME_URL_SHORT}`, Wc / 2, Hc - 82, Wc - 160);
     return c;
   }
   async function shareResults() {
@@ -1142,7 +1389,7 @@
       const blob = await new Promise(res => c.toBlob(res, "image/png"));
       const file = new File([blob], "udo-results.png", { type: "image/png" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: "UDO", text: "Our UDO results 🏆" }); } catch (e) {}
+        try { await navigator.share({ files: [file], title: "UDO", text: `Our UDO results 🏆 Play it on one phone: ${GAME_URL}` }); } catch (e) {}
         btn.textContent = "Share results";
       } else {
         const a = document.createElement("a");
@@ -1170,19 +1417,28 @@
     if (state === "lobby") {
       const n = players.length;
       if (n === 0) menu = "How to play";
-      // short and sweet: first-timers get a few words, everyone else just the finger
-      setHint(n === 0 ? (seen ? "☝️" : "One finger each") : n === 1 ? "One more ☝️" : "Hold still…");
+      // No words by the centre circle: they read as "press here". The seat guides near the edges
+      // show where fingers go; text only appears to correct a tap in the middle or a full phone.
+      setHint(t - centreTapAt < 1600 ? "Near the edge, not the middle"
+        : n >= 2 && n >= fingerCap() ? `Full at ${n}`
+        : n >= 2 && !seen ? "Hold still…" : "");
+      // lives follow the table size while people join, so the ring segments in the lobby are what you'll get
+      startLives = n >= CFG.bigTable ? CFG.bigLives : CFG.lives;
+      for (const p of players) p.lives = startLives;
       if (n >= 2 && t - lastChange >= CFG.armMs) { round = 0; enterReady(); sfx.go(); }
 
     } else if (state === "ready") {
-      const downCount = players.filter(p => p.down).length;
-      if (downCount === players.length) {
+      const alive = live(), downCount = alive.filter(p => p.down).length;
+      if (downCount === alive.length) {
         allUpSince = null;
-        const faster = round > 0 && round % CFG.speedEvery === 0;
-        setHint(reverse ? '<span class="r">UDO Reverse!</span> Lift for what doesn\'t fly'
-          : faster ? "Speeding up ⚡"
-          : !seen ? 'Wait for <span class="g">green</span>' : "");   // only on a phone's very first round
-        if (readyStart === null) { readyStart = t; readyDelay = (reverse ? 1500 : 500) + Math.random() * 700; }
+        setHint(roundBanner);                                  // set in enterReady: spotlight, reverse, level up…
+        if (readyStart === null) {
+          readyStart = t;
+          // a beat to read a rule change; almost none in rapid fire; otherwise short and a little random
+          readyDelay = reverse || spot ? 1300 + Math.random() * 500
+            : rapidNow ? 200 + Math.random() * 150
+            : (roundBanner ? 750 : 350) + Math.random() * 550;
+        }
         else if (t - readyStart >= readyDelay) startRoll(t);
       } else {
         readyStart = null; setHint("Fingers back");
@@ -1193,18 +1449,20 @@
       }
 
     } else if (state === "roll") {
-      setHint(reverse ? '<span class="r">🔄 Reverse</span>' : "");
+      setHint("");                                             // the pink ring and backwards spin already say "reverse"
       if (updateReel(t)) land(t);
 
     } else if (state === "landed") {
       if (target.chicken) {                                     // easter egg 2
-        setHint('Does a chicken fly? <span class="y">Nobody knows.</span> Free round.', true);
+        setHint('Chicken? <span class="y">Nobody knows.</span> Free round.', true);
         if (t - landAt >= windowMs + 1600) nextRound();
       } else {
         setHint("");
         if (t - landAt >= windowMs) {
-          if (target.lift) resolveLift();
-          else { state = "safe"; phaseAt = t; sfx.safe(); setHint(nextStillLine(), true); }
+          if (target.lift && spot) {                             // 🎯 the spotlit player had to lift and didn't
+            victims = [spot]; victimKind = "nolift"; reveal();
+          } else if (target.lift) resolveLift();
+          else { state = "safe"; phaseAt = t; sfx.safe(); setHint(rapidNow ? "" : nextStillLine(), true); }
         }
       }
 
@@ -1213,22 +1471,27 @@
 
     } else if (state === "result") {
       setHint(resultNote, true);
-      if (t - phaseAt >= 1600) {
+      if (t - phaseAt >= (rapidNow && !pending.length ? 600 : CFG.resultMs)) {
         if (pending.length) { victims = pending; victimKind = "strikes"; reveal(); }
         else nextRound();
       }
 
     } else if (state === "reveal") {
       setHint("");
-      if (t - phaseAt >= 900) openDare();
+      if (t - phaseAt >= CFG.revealMs) openDare();
 
     } else if (state === "safe") {
-      if (t - phaseAt >= 800) nextRound();
+      if (t - phaseAt >= (rapidNow ? 250 : CFG.safeMs)) nextRound();
+
+    } else if (state === "champ") {                            // 👑 the winner's moment, then the end screen
+      setHint("Last finger standing", true);
+      if (t - phaseAt >= CFG.champMs) endGame();
     }
 
     if (state === "intro" || state === "dare" || state === "end") setHint("");
     setMenu(menu);
     draw(t);
+    layoutHints();
     requestAnimationFrame(frame);
   }
 
@@ -1236,39 +1499,149 @@
   const faceAngle = (x, y) => Math.atan2(y - H / 2, x - W / 2) - Math.PI / 2;
   const labelSize = () => Math.round(Math.max(16, Math.min(24 * U, ringR * 0.38)));
 
+  // Labels normally sit on the centre side of a finger. When that would run them into the reel
+  // (narrow phones, side seats, crowded tables), they move to the outer side of the finger, or beside it
+  // along the table edge. Wherever they go, they still read upright for the person at that edge.
+  // A player's labels have two slots: 0 = the number (and strike pips), 1 = the time or result.
+  function placeLabels(ps) {
+    const size = labelSize(), RR = SLOT + 10 * U, m = size * 0.6;
+    const reachIn = ringR + size * 2.7, reachSide = ringR + size * 6;
+    const onScreen = (x, y) => x > m && x < W - m && y > m && y < H - m;
+    const clearOfReel = (x, y) => dist(x, y) > RR + size * 0.8;
+    for (const p of ps) {
+      const d = dist(p.x, p.y) || 1, ux = (p.x - W / 2) / d, uy = (p.y - H / 2) / d;
+      const a = faceAngle(p.x, p.y), tx = Math.cos(a), ty = Math.sin(a);     // along the edge, to the player's right
+      const sticky = p.lay && p.lay.mode !== "in" ? 12 * U : 0;           // a little stickiness so labels don't flicker
+      const inOk = d - reachIn - (RR + 6 * U) >= sticky;
+      // outside the finger only if the whole line fits on screen, not just its middle
+      const ox = p.x + ux * reachIn, oy = p.y + uy * reachIn, half = size * 2.2;
+      const outOk = onScreen(ox, oy) && onScreen(ox + tx * half, oy + ty * half) && onScreen(ox - tx * half, oy - ty * half);
+      const sideOk = dir => [0.35, 0.7, 1].every(f => {
+        const x = p.x + tx * dir * reachSide * f, y = p.y + ty * dir * reachSide * f;
+        return onScreen(x, y) && clearOfReel(x, y);
+      });
+      p.lay = inOk ? { mode: "in" } : outOk ? { mode: "out" } : sideOk(1) ? { mode: "side", dir: 1 }
+        : sideOk(-1) ? { mode: "side", dir: -1 } : { mode: "in" };
+      labelBoxes.push({ x0: p.x - ringR - 4 * U, y0: p.y - ringR - 4 * U, x1: p.x + ringR + 4 * U, y1: p.y + ringR + 4 * U });
+    }
+  }
+  // where a label's slot sits, in the finger's own turned frame
+  function slotPos(p, slot, size) {
+    const L = p.lay || { mode: "in" };
+    if (L.mode === "side") return { x: L.dir * (ringR + size * 0.5), y: slot ? size * 0.62 : -size * 0.55, align: L.dir > 0 ? "left" : "right" };
+    const off = slot ? ringR + size * 2.15 : ringR + size * 0.95;
+    return { x: 0, y: L.mode === "out" ? off : -off, align: "center" };
+  }
+  // record where a turned label lands on screen, so the centre text can stay clear of it
+  function noteBox(p, x, y, w, h) {
+    const a = faceAngle(p.x, p.y), c = Math.cos(a), s = Math.sin(a);
+    const wx = p.x + x * c - y * s, wy = p.y + x * s + y * c;
+    const hx = Math.abs(w / 2 * c) + Math.abs(h / 2 * s), hy = Math.abs(w / 2 * s) + Math.abs(h / 2 * c);
+    labelBoxes.push({ x0: wx - hx, y0: wy - hy, x1: wx + hx, y1: wy + hy });
+  }
   // Text near a finger, turned to read upright for the person sitting at that edge
-  function label(p, text, color, size, off, weight = 700) {
+  // (slot 0 sits right by the ring, slot 1 one line further out, under the number)
+  function label(p, text, color, size, weight = 700, slot = 1) {
+    const s = slotPos(p, slot, labelSize());
     ctx.save();
     ctx.translate(p.x, p.y); ctx.rotate(faceAngle(p.x, p.y));
     ctx.fillStyle = color; ctx.font = `${weight} ${size}px ${FONT}`;
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(text, 0, -off);
+    ctx.textAlign = s.align; ctx.textBaseline = "middle";
+    ctx.fillText(text, s.x, s.y);
+    const w = ctx.measureText(text).width;
+    noteBox(p, s.align === "left" ? s.x + w / 2 : s.align === "right" ? s.x - w / 2 : s.x, s.y, w, size);
     ctx.restore();
   }
   function numberLabel(p) {
-    const size = labelSize();
+    const size = labelSize(), s = slotPos(p, 0, size);
     ctx.save();
     ctx.translate(p.x, p.y); ctx.rotate(faceAngle(p.x, p.y));
-    ctx.font = `800 ${size}px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    const txt = `#${p.n}`, w = ctx.measureText(txt).width, y = -(ringR + size * 0.95);
-    ctx.fillStyle = "#fff"; ctx.fillText(txt, 0, y);
-    ctx.fillStyle = AMBER;                                     // strike pips
-    for (let i = 0; i < p.strikes; i++) { ctx.beginPath(); ctx.arc(w / 2 + size * 0.45 + i * size * 0.5, y, size * 0.18, 0, TAU); ctx.fill(); }
+    ctx.font = `800 ${size}px ${FONT}`; ctx.textAlign = s.align; ctx.textBaseline = "middle";
+    const txt = `#${p.n}`, w = ctx.measureText(txt).width;
+    ctx.fillStyle = "#fff"; ctx.fillText(txt, s.x, s.y);
+    const left = s.align === "left" ? s.x : s.align === "right" ? s.x - w : s.x - w / 2;
+    noteBox(p, left + w / 2, s.y, w, size);
     ctx.restore();
+  }
+  // Strikes live on the finger's own ring: two amber notches on the side facing the reel,
+  // where a hand coming in from the table edge doesn't cover them
+  function strikeMarks(p, r) {
+    if (!p.strikes) return;
+    const toward = Math.atan2(H / 2 - p.y, W / 2 - p.x), span = 0.62, gap = 0.16;
+    ctx.save();
+    ctx.strokeStyle = AMBER; ctx.lineCap = "round"; ctx.lineWidth = Math.max(5, ringR * 0.16);
+    for (let i = 0; i < Math.min(p.strikes, CFG.strikesForDare); i++) {
+      const a0 = toward + (i === 0 ? -span - gap / 2 : gap / 2);
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, a0, a0 + span); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  // In knockout the ring is one arc per life left (3, 2, 1), centred on the side facing the reel
+  // so the strike notches sit on a segment; in Endless it's a whole circle
+  function strokeRing(p, r) {
+    const n = ko ? Math.max(1, p.lives) : 0;
+    if (!n) { ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.stroke(); return; }
+    const toward = Math.atan2(H / 2 - p.y, W / 2 - p.x), gap = 0.42, seg = TAU / n - gap;
+    for (let i = 0; i < n; i++) {
+      const mid = toward + i * TAU / n;
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, mid - seg / 2, mid + seg / 2); ctx.stroke();
+    }
   }
   function fingerCircle(p, t) {
     const grow = Math.min(1, (t - p.born) / 160), pulse = Math.sin(t / 170) * 3 * U;
+    if (p.out) {                                       // knocked out: a faint outline where they sat
+      ctx.save();
+      ctx.globalAlpha = 0.22; ctx.strokeStyle = p.color; ctx.lineWidth = 2 * U; ctx.setLineDash([3 * U, 9 * U]);
+      ctx.beginPath(); ctx.arc(p.x, p.y, ringR * 0.8, 0, TAU); ctx.stroke();
+      ctx.restore();
+      return;
+    }
     if (p.down) {
       ctx.fillStyle = p.color;
       ctx.beginPath(); ctx.arc(p.x, p.y, rIn() * grow, 0, TAU); ctx.fill();
-      ctx.strokeStyle = p.color; ctx.lineWidth = Math.max(4, ringR * 0.1);
-      ctx.beginPath(); ctx.arc(p.x, p.y, (ringR + pulse) * grow, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = p.color; ctx.lineWidth = Math.max(4, ringR * 0.1); ctx.lineCap = "round";
+      strokeRing(p, (ringR + pulse) * grow);
+      strikeMarks(p, (ringR + pulse) * grow);
     } else {
       ctx.save();
       ctx.globalAlpha = 0.55; ctx.strokeStyle = p.color; ctx.lineWidth = 3 * U; ctx.setLineDash([6 * U, 8 * U]);
-      ctx.beginPath(); ctx.arc(p.x, p.y, ringR, 0, TAU); ctx.stroke();
+      strokeRing(p, ringR);
       ctx.restore();
+      strikeMarks(p, ringR);
     }
+  }
+
+  // Lobby seat guides: faint finger spots near the table edges, so nobody aims for the big circle in the middle.
+  // Portrait: one per side. Landscape: the four corners of an oval (the short sides are too close to the reel).
+  function seatSpots() {
+    const g = ringR * 0.8, cx = W / 2, cy = H / 2;
+    if (H >= W) {
+      const rx = W / 2 - g - 8 * U, ry = Math.min(H / 2 - g - 30 * U, rx * 1.6);
+      return [[cx, cy - ry], [cx + rx, cy], [cx, cy + ry], [cx - rx, cy]];
+    }
+    const rx = (W / 2 - g - 8 * U) * 0.8, ry = (H / 2 - g - 8 * U) * 0.62;   // kept clear of the corner button
+    return [[cx - rx, cy - ry], [cx + rx, cy - ry], [cx + rx, cy + ry], [cx - rx, cy + ry]];
+  }
+  // Each spot is a grey preview of a placed finger (disc + dashed ring) with a tap ripple.
+  // No pointing hand: any direction it points in reads as "go there", and the middle is the wrong place.
+  function drawSeats(t) {
+    if (state !== "lobby" || players.length >= 2) return;      // once two are down, the arming rings take over
+    const g = ringR * 0.8, flash = Math.max(0, 1 - (t - centreTapAt) / 900);
+    seatSpots().forEach(([x, y], i) => {
+      if (players.some(p => Math.hypot(p.x - x, p.y - y) < ringR * 2.2)) return;   // someone is already sitting here
+      const ph = ((t + i * 400) % 1600) / 1600;                    // ripples take turns around the table
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, 0.55 + flash * 0.45);
+      ctx.fillStyle = "rgba(255,176,0,.5)";                        // marigold, the game's "do this" colour (Play button)
+      ctx.beginPath(); ctx.arc(x, y, g * 0.62, 0, TAU); ctx.fill();
+      ctx.strokeStyle = "rgba(255,176,0,.9)"; ctx.lineWidth = 2.5 * U; ctx.setLineDash([5 * U, 7 * U]);
+      ctx.beginPath(); ctx.arc(x, y, g, 0, TAU); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = (1 - ph) * (0.5 + flash * 0.5);
+      ctx.lineWidth = 2 * U;
+      ctx.beginPath(); ctx.arc(x, y, g * (0.62 + ph * 0.7), 0, TAU); ctx.stroke();
+      ctx.restore();
+    });
   }
 
   // little burst in your colour when you lift in time
@@ -1306,8 +1679,8 @@
       if (col === GREEN) { ctx.fillStyle = "rgba(94,227,74,.12)"; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill(); }
       ctx.strokeStyle = col; ctx.lineWidth = 5 * U;
       ctx.beginPath(); ctx.arc(cx, cy, RR, 0, TAU); ctx.stroke();
-      if (revRound) {                                           // keep a pink outer ring as the reverse reminder
-        ctx.strokeStyle = REV; ctx.lineWidth = 2.5 * U;
+      if (revRound || spot) {                                   // outer reminder: pink for reverse, their colour for spotlight
+        ctx.strokeStyle = spot ? spot.color : REV; ctx.lineWidth = 2.5 * U;
         ctx.beginPath(); ctx.arc(cx, cy, RR + 8 * U, 0, TAU); ctx.stroke();
       }
       const k = (t - landAt) / 420;                             // shockwave when it turns green
@@ -1319,15 +1692,18 @@
       // three arcs: drift when idle, whirl while rolling (a fake stop keeps them spinning). Pink in reverse rounds.
       const rolling = state === "roll" || state === "grace";
       const flash = Math.max(0, 1 - (t - slotFlash) / 500);
-      const spin = rolling ? t / 150 : t / (revRound ? 900 : 2600);
+      const spin = rolling ? t / (150 / currentSpeed()) : t / (revRound || spot ? 900 : 2600);   // whirls faster each level
       ctx.lineCap = "round";
-      ctx.strokeStyle = revRound ? REV : rolling ? "rgba(255,255,255,.6)" : `rgba(255,255,255,${0.25 + flash * 0.6})`;
-      ctx.lineWidth = (revRound ? 4 : 3) * U;
+      const spotCol = spot && state !== "lobby" ? spot.color : null;
+      ctx.strokeStyle = spotCol || (revRound ? REV : rolling ? "rgba(255,255,255,.6)" : `rgba(255,255,255,${0.25 + flash * 0.6})`);
+      ctx.lineWidth = (revRound || spotCol ? 4 : 3) * U;
       for (let i = 0; i < 3; i++) {
         const a = (revRound ? -spin : spin) + i * TAU / 3;      // reverse rounds even spin the other way
         ctx.beginPath(); ctx.arc(cx, cy, RR, a, a + TAU / 3 * 0.55); ctx.stroke();
       }
       if (revRound && state === "ready") drawSprite("🔄", cx, cy, 0.7, 0.85);
+      if (spotCol && state === "ready") drawSprite("🎯", cx, cy, 0.7, 0.85);
+      if (state === "lobby") drawSprite("🐦", cx, cy, 0.8, 0.22);   // a faint preview: this circle shows things, it isn't pressed
     }
 
     if (!reel) return;
@@ -1357,24 +1733,43 @@
     ctx.globalCompositeOperation = "destination-out";
     for (const v of victims) { ctx.beginPath(); ctx.arc(v.x, v.y, r, 0, TAU); ctx.fill(); }
     ctx.restore();
+    placeLabels(victims);
     for (const v of victims) {
+      if (state === "champ") {                         // 👑 the winner: crown in the ring, no times
+        const k = Math.min(1, (t - floodAt) / 500), bob = Math.sin(t / 260) * 4 * U;
+        ctx.save(); ctx.globalAlpha = 0.35; ctx.strokeStyle = "#fff"; ctx.lineWidth = 3 * U;
+        ctx.beginPath(); ctx.arc(v.x, v.y, ringR + 12 * U, 0, TAU); ctx.stroke(); ctx.restore();
+        drawSprite("👑", v.x, v.y + bob, 0.9 * k, 1);
+        numberLabel(v);
+        continue;
+      }
       fingerCircle(v, t); numberLabel(v);
-      label(v, timeText(v), "#fff", Math.round(size * 0.75), ringR + size * 2.15, 800);
+      label(v, timeText(v), "#fff", Math.round(size * 0.75), 800);
     }
   }
 
   function draw(t) {
     ctx.clearRect(0, 0, W, H);
+    labelBoxes = [];
     if (state === "intro" || state === "end") return;
-    if ((state === "reveal" || state === "dare") && victims.length) { drawFlood(t); return; }
+    if ((state === "reveal" || state === "dare" || state === "champ") && victims.length) { drawFlood(t); return; }
 
     drawSlot(t);
+    placeLabels(players);
     const arming = state === "lobby" && players.length >= 2;
     const settled = state === "result";
     const size = labelSize();
+    const spotOn = spot && ["ready", "roll", "landed", "grace", "safe"].includes(state);
 
     for (const p of players) {
-      fingerCircle(p, t);
+      // 🎯 spotlight: everyone else fades back; the chosen one gets a pulsing white halo
+      if (spotOn && p !== spot) { ctx.save(); ctx.globalAlpha = 0.3; fingerCircle(p, t); ctx.restore(); }
+      else fingerCircle(p, t);
+      if (spotOn && p === spot) {
+        const k = (Math.sin(t / 140) + 1) / 2;
+        ctx.save(); ctx.globalAlpha = 0.55 + k * 0.45; ctx.strokeStyle = "#fff"; ctx.lineWidth = 3 * U;
+        ctx.beginPath(); ctx.arc(p.x, p.y, ringR + (11 + k * 5) * U, 0, TAU); ctx.stroke(); ctx.restore();
+      }
 
       const hl = (state === "grace" && victims.includes(p)) ? "#fff" : (settled && struck.includes(p)) ? AMBER : null;
       if (hl) {
@@ -1390,12 +1785,13 @@
         ctx.beginPath(); ctx.arc(p.x, p.y, ringR + 10 * U, -Math.PI / 2, -Math.PI / 2 + k * TAU); ctx.stroke();
       }
 
-      numberLabel(p);
-      const off = ringR + size * 2.15, small = Math.round(size * 0.75);
-      if (settled && struck.includes(p)) label(p, `${pending.includes(p) ? "2nd strike" : "strike"} · ${p.rt} ms`, AMBER, small, off, 800);
-      else if (settled && fastest === p) label(p, `⚡ ${p.rt} ms`, "#fff", small, off, 800);
-      else if (p.rt !== null && p.rt >= 0 && (state === "landed" || settled)) label(p, `${p.rt} ms`, "rgba(255,255,255,.75)", small, off, 600);
+      // Words by a finger only when they matter: the number while seats are being taken,
+      // then after a round just the strike(s) and the fastest. Everyone else stays quiet.
+      if (state === "lobby") numberLabel(p);
+      else if (settled && struck.includes(p)) label(p, pending.includes(p) ? "2nd strike!" : "Strike", AMBER, size, 800, 0);
+      else if (settled && fastest === p && players.length > 2) label(p, `⚡ ${p.rt} ms`, "#fff", Math.round(size * 0.8), 800, 0);
     }
+    drawSeats(t);
     drawParticles(t);
   }
 

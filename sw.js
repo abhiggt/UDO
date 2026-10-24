@@ -1,5 +1,5 @@
 // UDO offline support: keep the game and its font on the phone so it plays with no internet.
-const CACHE = "udo-0.2";   // bump this with every release so phones pick up the new version
+const CACHE = "udo-0.3";   // bump this with every release so phones pick up the new version
 const SHELL = [
   "./",
   "./index.html",
